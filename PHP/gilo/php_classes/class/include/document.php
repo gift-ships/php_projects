@@ -1,6 +1,6 @@
 <?php
 include "document_tags.php";
-class Document extends Attrib implements Element{
+class Document implements Element{
 	private String $DocType;
 	private HtmlBody $DocBody;
 	private Title $Title;
@@ -10,11 +10,12 @@ class Document extends Attrib implements Element{
 	private $lang = "en";
     private $innerhtmlTags = [];
 	private $tagCount = 0;
-	public function __construct($doc_type,$title){
+	public function __construct($doc_type,$title,$lang){
 		$this->DocType = $doc_type;
 		$this->Title = new Title($title);
 		$this->DocBody =  new HtmlBody();
-		$this->AddAttrib("lang","en");
+		$this->lang = $lang;
+		
 	}
 	public function AddElement($element){
 		$this->DocBody->AddElement($element);
@@ -25,11 +26,12 @@ class Document extends Attrib implements Element{
 		
 		
 	}
+	
 	public function render(){
 		try
 		{
 			echo "<!DOCTYPE ".$this->DocType.">";
-			echo "<".$this->DocType.">";
+			echo "<".$this->DocType." lang=$this->lang>";
 			if (isset($this->Title)){
 				$this->Title->render();
 			}
