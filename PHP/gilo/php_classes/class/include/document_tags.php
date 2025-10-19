@@ -17,12 +17,27 @@ Class Attrib {
 	public function __construct(){
 		
 	}
-	public function AddAttrib($attribname,$value):void 
+	public function AddAttrib(/*$attribname,$value*/):void 
 	
 	{ /*attribs wont be repeated*/
-		$this->Attribs[$attribname] = $value;
+		$numArgs = func_num_args();
+		
+		if ($numArgs == 2){
+		$this->Attribs[func_get_arg(0)] = func_get_arg(1);
+		}
+		elseif($numArgs == 1 && is_array(func_get_arg(0))){
+			foreach(func_get_arg(0) as $key => $value){
+				$this->Attribs[$key] = $value;
+			}
+		}
+		else {
+		    throw new ErrorException("AddAttrib1 function  not allowed for Object ".get_class($this)." with arguments ".$numArgs, 0, 1, "documents_tags.php", 1 );
+			
+		}
+		
 		
 	}
+	
 	public function renderAttrib():void {
 		if (isset($this->Attribs)){
 			foreach($this->Attribs as $key => $value){
@@ -90,9 +105,14 @@ Class Label extends Attrib implements Element{
 	}
 	
 	public function render():void {
-		if (isset($this->Label)){		
-				echo "<label class=\"{$this->Class}\">".
-						$this->Label.
+		if (isset($this->Label)){	
+			echo "<label ",$this->renderAttrib(),">";
+			if (isset($this->Elements)){
+				foreach($this->Elements as $element){
+					$element->render();
+				}
+			}		
+				echo $this->Label.
 				     "</label>";
 		}
 		
@@ -167,7 +187,7 @@ Class Meta extends Attrib implements Element{
 		echo "<meta ",$this->renderAttrib(),">";
 	}
 }
-Class tableRow extends Attrib implements Element{
+Class TableRow extends Attrib implements Element{
 	private $id ;
 	private $Elements = array();
 	private $Span ;
@@ -348,7 +368,7 @@ Class Table extends Attrib implements Element{
 	private $TableHead;
 	public function __construct($tablecaption,$tablecolumn){
 		$this->caption = $tablecaption; 
-		$this->id = rand(1,1000);
+		
 		$this->Tablecolumn = explode(",", $tablecolumn ); 
 		$this->TableHead = new TableHead();
 	}
@@ -432,9 +452,9 @@ Class HtmlBody extends Attrib implements Element {
 		echo "</body>";
 	}	
 }
-/*
-Class HtmlBody implements Element{
-	public string $ElementClass{ get; set; }
+
+Class HtmlDoc extends Attrib implements Element{
+	
 	private $Elements = array();
 	public function __construct(){
 		
@@ -445,16 +465,81 @@ Class HtmlBody implements Element{
 	}
     public function render(){
 	   
-		echo "<body>";
+		echo "<html ",$this->renderAttrib(),">";
 		
 		if (isset($this->Elements)){
 			foreach($this->Elements as $element){
 				$element->render();
 			}
 		}
-		echo "</body>";
+		echo "</html>";
 	}	
-}*/
+}
+Class Path extends Attrib implements Element{
+	private $Elements = array();
+	public function __construct(){
+		
+	}
+    public function AddElement($element){
+		array_push($this->Elements,(object) $element);
+
+	}
+    public function render(){
+	   
+		echo "<path ",$this->renderAttrib(),">";
+		
+		if (isset($this->Elements)){
+			foreach($this->Elements as $element){
+				$element->render();
+			}
+		}
+		echo "</path>";
+	}
+}  
+Class SVectorG extends Attrib implements Element{
+	private $Elements = array();
+	public function __construct(){
+		
+	}
+    public function AddElement($element){
+		array_push($this->Elements,(object) $element);
+
+	}
+    public function render(){
+	   
+		echo "<svg ",$this->renderAttrib(),">";
+		
+		if (isset($this->Elements)){
+			foreach($this->Elements as $element){
+				$element->render();
+			}
+		}
+		echo "</svg>";
+	}	
+}
+Class Script implements Element{
+	private $Elements = array();
+	private String $Script;
+	public function __construct($script){
+		$this->Script = $script;
+	}
+    public function AddElement($element){
+		//array_push($this->Elements,(object) $element);
+
+	}
+    public function render(){
+	   
+		echo "<script>";
+		
+		if (isset($this->Elements)){
+			foreach($this->Elements as $element){
+				$element->render();
+			}
+		}
+		echo $this->Script;
+		echo "</script>";
+	}	
+}
 Class DocHead extends Attrib implements Element{
 	private $Elements = array();
 	/*public string $ElementClass{ get; set; }*/
@@ -466,6 +551,7 @@ Class DocHead extends Attrib implements Element{
 				$element->render();
 			}
 		}
+		include "class\scripts\headscript.php";
 		echo "</head>";
 	}
 	public function __construct(){
