@@ -1,0 +1,2623 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IoT Dashboard</title>
+  <script src="/_sdk/data_sdk.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100%;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin: 0;
+            font-size: 2.2em;
+            font-weight: 600;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #7f8c8d;
+        }
+
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 15px;
+            padding: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            color: #7f8c8d;
+            cursor: pointer;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tab.active {
+            background: #3498db;
+            color: white;
+            box-shadow: 0 2px 10px rgba(52, 152, 219, 0.3);
+        }
+
+        .tab:hover:not(.active) {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            min-height: 600px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .machine-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .machine-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease;
+        }
+
+        .machine-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .machine-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .machine-name {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .status-online {
+            background: #27ae60;
+        }
+
+        .status-offline {
+            background: #e74c3c;
+        }
+
+        .status-warning {
+            background: #f39c12;
+        }
+
+        .machine-info {
+            margin: 15px 0;
+        }
+
+        .machine-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .category-section {
+            margin-bottom: 40px;
+        }
+
+        .category-title {
+            color: #2c3e50;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #3498db;
+        }
+
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .sensor-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+
+        .sensor-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 10px 0;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .user-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .error-report-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #e74c3c;
+        }
+
+        .error-report-card.warning {
+            border-left-color: #f39c12;
+        }
+
+        .error-report-card.info {
+            border-left-color: #3498db;
+        }
+
+        .error-report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .error-severity {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .severity-critical {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .severity-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .severity-info {
+            background: #3498db;
+            color: white;
+        }
+
+        .error-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .error-detail-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .error-detail-label {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 0.9em;
+        }
+
+        .error-detail-value {
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+
+        .print-only {
+            display: none;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            
+            .print-content, .print-content * {
+                visibility: visible;
+            }
+            
+            .print-content {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            
+            .print-only {
+                display: block;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            .error-report-card {
+                page-break-inside: avoid;
+                margin-bottom: 20px;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 600px;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 10px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .machine-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="dashboard-container">
+   <div class="header">
+    <h1 id="dashboard-title">IoT Control Center</h1>
+    <div class="user-info"><span id="company-name">TechCorp Industries</span> <span>|</span> <span id="current-user">Admin User</span> <span id="current-time"></span>
+    </div>
+   </div>
+   <div class="tabs"><button class="tab active" onclick="showTab('dashboard')">Dashboard</button> <button class="tab" onclick="showTab('machines')">Machines</button> <button class="tab" onclick="showTab('monitor')">Live Monitor</button> <button class="tab" onclick="showTab('reports')">Error Reports</button> <button class="tab" onclick="showTab('devices')">Devices</button> <button class="tab" onclick="showTab('profile')">Profile</button>
+   </div><!-- Dashboard Tab -->
+   <div id="dashboard" class="tab-content active">
+    <h2>Machine Overview</h2>
+    <div id="dashboard-content">
+     <div class="loading">
+      <div class="spinner"></div> Loading dashboard data...
+     </div>
+    </div>
+   </div><!-- Machines Tab -->
+   <div id="machines" class="tab-content">
+    <h2>Machine Management</h2>
+    <div id="machines-content">
+     <div class="loading">
+      <div class="spinner"></div> Loading machines...
+     </div>
+    </div>
+   </div><!-- Live Monitor Tab -->
+   <div id="monitor" class="tab-content">
+    <h2>Live Monitoring</h2>
+    <div class="form-group"><label for="machine-select">Select Machine to Monitor:</label> <select id="machine-select" class="form-control" onchange="loadMachineSensors()"> <option value="">Choose a machine...</option> </select>
+    </div>
+    <div id="sensor-data" style="display: none;">
+     <h3>Sensor Readings</h3>
+     <div id="sensors-grid" class="sensor-grid"></div>
+     <div id="chart-container" class="chart-container" style="display: none;">
+      <canvas id="sensor-chart"></canvas>
+     </div>
+    </div>
+   </div><!-- Error Reports Tab -->
+   <div id="reports" class="tab-content">
+    <h2>Machine Error Reports</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+     <div style="display: flex; gap: 15px; align-items: center;">
+      <div class="form-group" style="margin: 0;"><label for="report-machine-filter">Filter by Machine:</label> <select id="report-machine-filter" class="form-control" onchange="filterErrorReports()" style="width: 200px;"> <option value="">All Machines</option> </select>
+      </div>
+      <div class="form-group" style="margin: 0;"><label for="report-severity-filter">Filter by Severity:</label> <select id="report-severity-filter" class="form-control" onchange="filterErrorReports()" style="width: 150px;"> <option value="">All Severities</option> <option value="critical">Critical</option> <option value="warning">Warning</option> <option value="info">Info</option> </select>
+      </div>
+     </div><button class="btn btn-primary" onclick="printErrorReport()">🖨️ Print Report</button>
+    </div>
+    <div id="error-reports-content">
+     <div class="loading">
+      <div class="spinner"></div> Loading error reports...
+     </div>
+    </div>
+   </div><!-- Devices Tab -->
+   <div id="devices" class="tab-content">
+    <h2>Device Registration</h2><button class="btn btn-primary" onclick="showAddDeviceForm()">Add New Device</button>
+    <div id="devices-list" style="margin-top: 20px;">
+     <div class="loading">
+      <div class="spinner"></div> Loading devices...
+     </div>
+    </div>
+   </div><!-- Profile Tab -->
+   <div id="profile" class="tab-content">
+    <h2>User Profile</h2>
+    <div id="profile-content">
+     <div class="loading">
+      <div class="spinner"></div> Loading profile...
+     </div>
+    </div>
+   </div>
+  </div><!-- Modals -->
+  <div id="ai-modal" class="modal">
+   <div class="modal-content"><span class="close" onclick="closeModal('ai-modal')">×</span>
+    <h3>AI Diagnosis</h3>
+    <div id="ai-content"></div>
+   </div>
+  </div>
+  <div id="device-modal" class="modal">
+   <div class="modal-content"><span class="close" onclick="closeModal('device-modal')">×</span>
+    <h3>Add New Device</h3>
+    <form id="device-form" onsubmit="addDevice(event)">
+     <div class="form-group"><label for="device-name">Device Name:</label> <input type="text" id="device-name" class="form-control" required>
+     </div>
+     <div class="form-group"><label for="device-category">Category:</label> <select id="device-category" class="form-control" required> <option value="">Select Category</option> <option value="Manufacturing">Manufacturing</option> <option value="HVAC">HVAC</option> <option value="Security">Security</option> <option value="Energy">Energy</option> </select>
+     </div>
+     <div class="form-group"><label for="device-location">Location:</label> <input type="text" id="device-location" class="form-control" required>
+     </div><button type="submit" class="btn btn-primary">Add Device</button>
+    </form>
+   </div>
+  </div>
+  <div id="user-modal" class="modal">
+   <div class="modal-content" style="max-width: 800px; max-height: 90%;"><span class="close" onclick="closeModal('user-modal')">×</span>
+    <h3 id="user-modal-title">Add New User</h3>
+    <form id="user-form" onsubmit="saveUser(event)">
+     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;"><!-- Basic Information -->
+      <div>
+       <h4 style="color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #3498db; padding-bottom: 5px;">👤 Basic Information</h4>
+       <div class="form-group"><label for="user-username">Username:</label> <input type="text" id="user-username" class="form-control" required>
+       </div>
+       <div class="form-group"><label for="user-first-name">First Name:</label> <input type="text" id="user-first-name" class="form-control" required>
+       </div>
+       <div class="form-group"><label for="user-last-name">Last Name:</label> <input type="text" id="user-last-name" class="form-control" required>
+       </div>
+       <div class="form-group"><label for="user-email">Email:</label> <input type="email" id="user-email" class="form-control" required>
+       </div>
+       <div class="form-group"><label for="user-phone">Phone:</label> <input type="tel" id="user-phone" class="form-control" placeholder="+1-555-0123">
+       </div>
+      </div><!-- Personal Information -->
+      <div>
+       <h4 style="color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #3498db; padding-bottom: 5px;">📋 Personal Details</h4>
+       <div class="form-group"><label for="user-date-of-birth">Date of Birth:</label> <input type="date" id="user-date-of-birth" class="form-control">
+       </div>
+       <div class="form-group"><label for="user-gender">Gender:</label> <select id="user-gender" class="form-control"> <option value="">Select Gender</option> <option value="male">Male</option> <option value="female">Female</option> <option value="other">Other</option> </select>
+       </div>
+       <div class="form-group"><label for="user-location">Location:</label> <input type="text" id="user-location" class="form-control" placeholder="City, State/Country">
+       </div>
+       <div class="form-group"><label for="user-timezone">Timezone:</label> <select id="user-timezone" class="form-control"> <option value="">Select Timezone</option> <option value="America/Los_Angeles">Pacific Time (PT)</option> <option value="America/Denver">Mountain Time (MT)</option> <option value="America/Chicago">Central Time (CT)</option> <option value="America/New_York">Eastern Time (ET)</option> <option value="America/Phoenix">Arizona Time</option> <option value="Europe/London">London (GMT)</option> <option value="Europe/Paris">Central European Time</option> <option value="Asia/Tokyo">Japan Time</option> <option value="Asia/Shanghai">China Time</option> </select>
+       </div>
+       <div class="form-group"><label for="user-language">Language:</label> <select id="user-language" class="form-control"> <option value="en">English</option> <option value="es">Spanish</option> <option value="fr">French</option> <option value="de">German</option> <option value="zh">Chinese</option> <option value="ja">Japanese</option> </select>
+       </div>
+      </div>
+     </div><!-- Profile Information -->
+     <div style="margin-top: 20px;">
+      <h4 style="color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #3498db; padding-bottom: 5px;">🌐 Profile Information</h4>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+       <div class="form-group"><label for="user-bio">Bio:</label> <textarea id="user-bio" class="form-control" rows="3" placeholder="Brief description about the user..."></textarea>
+       </div>
+       <div class="form-group"><label for="user-website">Website:</label> <input type="url" id="user-website" class="form-control" placeholder="https://example.com">
+       </div>
+      </div>
+     </div><!-- System Settings (Admin Only) -->
+     <div id="role-selection" style="margin-top: 20px;">
+      <h4 style="color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #e74c3c; padding-bottom: 5px;">🛡️ System Access</h4>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+       <div class="form-group"><label for="user-roles">Assign Roles:</label>
+        <div id="user-roles" style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px;"><label style="display: block; margin: 5px 0; cursor: pointer;"> <input type="checkbox" name="user-role" value="1" style="margin-right: 8px;"> <strong>System Administrator</strong><br><small style="color: #666; margin-left: 20px;">Full system access with all permissions</small> </label> <label style="display: block; margin: 5px 0; cursor: pointer;"> <input type="checkbox" name="user-role" value="2" style="margin-right: 8px;"> <strong>Operations Manager</strong><br><small style="color: #666; margin-left: 20px;">Manage operations and view reports</small> </label> <label style="display: block; margin: 5px 0; cursor: pointer;"> <input type="checkbox" name="user-role" value="3" style="margin-right: 8px;"> <strong>Maintenance Technician</strong><br><small style="color: #666; margin-left: 20px;">Access to maintenance and monitoring functions</small> </label> <label style="display: block; margin: 5px 0; cursor: pointer;"> <input type="checkbox" name="user-role" value="4" style="margin-right: 8px;"> <strong>Machine Operator</strong><br><small style="color: #666; margin-left: 20px;">Basic monitoring and operation access</small> </label> <label style="display: block; margin: 5px 0; cursor: pointer;"> <input type="checkbox" name="user-role" value="5" style="margin-right: 8px;"> <strong>Read-Only Viewer</strong><br><small style="color: #666; margin-left: 20px;">View-only access to dashboards and reports</small> </label>
+        </div>
+       </div>
+       <div id="status-selection" class="form-group"><label for="user-status">Account Status:</label> <select id="user-status" class="form-control"> <option value="active">Active</option> <option value="inactive">Inactive</option> <option value="suspended">Suspended</option> </select> <small style="color: #666;">Active users can log in and access the system</small>
+       </div>
+      </div>
+     </div>
+     <div style="margin-top: 30px; text-align: right; border-top: 1px solid #eee; padding-top: 20px;"><button type="button" class="btn btn-primary" onclick="closeModal('user-modal')" style="margin-right: 10px;">Cancel</button> <button type="submit" class="btn btn-success">💾 Save User</button>
+     </div>
+    </form>
+   </div>
+  </div>
+  <script>
+        let currentData = [];
+        let currentChart = null;
+        let isAdmin = true;
+        let editingUserId = null;
+        let allErrorReports = [];
+        let filteredErrorReports = [];
+
+        const defaultConfig = {
+            dashboard_title: "IoT Control Center",
+            company_name: "TechCorp Industries"
+        };
+
+        // Machine categories based on database schema
+        const machineCategories = [
+            { id: 1, category_name: "Manufacturing Equipment", category_code: "MFG", icon: "🏭", color: "#3498db" },
+            { id: 2, category_name: "HVAC Systems", category_code: "HVAC", icon: "❄️", color: "#2ecc71" },
+            { id: 3, category_name: "Security Systems", category_code: "SEC", icon: "🔒", color: "#e74c3c" },
+            { id: 4, category_name: "Energy Management", category_code: "ENR", icon: "⚡", color: "#f39c12" }
+        ];
+
+        // Value categories for sensors
+        const valueCategories = [
+            { id: 1, value_name: "Temperature", value_code: "TEMP", unit: "°F", data_type: "decimal" },
+            { id: 2, value_name: "Pressure", value_code: "PRES", unit: "PSI", data_type: "decimal" },
+            { id: 3, value_name: "Humidity", value_code: "HUM", unit: "%", data_type: "decimal" },
+            { id: 4, value_name: "Vibration", value_code: "VIB", unit: "mm/s", data_type: "decimal" },
+            { id: 5, value_name: "Air Flow", value_code: "FLOW", unit: "CFM", data_type: "decimal" },
+            { id: 6, value_name: "Light Level", value_code: "LIGHT", unit: "lux", data_type: "decimal" },
+            { id: 7, value_name: "Motion Detection", value_code: "MOTION", unit: "", data_type: "boolean" },
+            { id: 8, value_name: "Power Consumption", value_code: "POWER", unit: "kW", data_type: "decimal" }
+        ];
+
+        // Sample machines based on database schema
+        const sampleMachines = [
+            {
+                machine_id: "MFG-001",
+                machine_name: "Production Line A",
+                category_id: 1,
+                category: "Manufacturing Equipment",
+                location: "Factory Floor 1",
+                model: "PL-2000X",
+                manufacturer: "IndustrialTech",
+                serial_number: "IT-PL-2023-001",
+                status: "active",
+                installed_at: "2023-01-15",
+                last_maintenance: "2024-01-10",
+                next_maintenance: "2024-04-10",
+                sensors: [
+                    { value_category_id: 1, name: "Temperature", current_value: 72, unit: "°F", warning_min: 65, warning_max: 85, critical_min: 60, critical_max: 90 },
+                    { value_category_id: 2, name: "Pressure", current_value: 45, unit: "PSI", warning_min: 35, warning_max: 55, critical_min: 30, critical_max: 60 },
+                    { value_category_id: 4, name: "Vibration", current_value: 0.2, unit: "mm/s", warning_min: 0, warning_max: 0.5, critical_min: 0, critical_max: 1.0 }
+                ],
+                errors: 0,
+                lastUpdated: new Date().toISOString()
+            },
+            {
+                machine_id: "HVAC-002",
+                machine_name: "HVAC Unit B",
+                category_id: 2,
+                category: "HVAC Systems",
+                location: "Building 2 - Floor 3",
+                model: "AC-5000",
+                manufacturer: "ClimateControl Inc",
+                serial_number: "CC-AC-2023-002",
+                status: "maintenance",
+                installed_at: "2023-03-20",
+                last_maintenance: "2024-01-05",
+                next_maintenance: "2024-03-05",
+                sensors: [
+                    { value_category_id: 1, name: "Temperature", current_value: 68, unit: "°F", warning_min: 65, warning_max: 75, critical_min: 60, critical_max: 80 },
+                    { value_category_id: 3, name: "Humidity", current_value: 45, unit: "%", warning_min: 30, warning_max: 60, critical_min: 20, critical_max: 70 },
+                    { value_category_id: 5, name: "Air Flow", current_value: 850, unit: "CFM", warning_min: 700, warning_max: 1000, critical_min: 600, critical_max: 1200 }
+                ],
+                errors: 2,
+                lastUpdated: new Date().toISOString()
+            },
+            {
+                machine_id: "SEC-003",
+                machine_name: "Security Camera 1",
+                category_id: 3,
+                category: "Security Systems",
+                location: "Main Entrance",
+                model: "SC-HD-Pro",
+                manufacturer: "SecureTech",
+                serial_number: "ST-SC-2023-003",
+                status: "active",
+                installed_at: "2023-02-10",
+                last_maintenance: "2024-01-15",
+                next_maintenance: "2024-07-15",
+                sensors: [
+                    { value_category_id: 7, name: "Motion Detection", current_value: 1, unit: "", warning_min: 0, warning_max: 1, critical_min: 0, critical_max: 1 },
+                    { value_category_id: 6, name: "Light Level", current_value: 850, unit: "lux", warning_min: 100, warning_max: 2000, critical_min: 50, critical_max: 3000 }
+                ],
+                errors: 0,
+                lastUpdated: new Date().toISOString()
+            },
+            {
+                machine_id: "ENR-004",
+                machine_name: "Power Distribution Unit",
+                category_id: 4,
+                category: "Energy Management",
+                location: "Electrical Room A",
+                model: "PDU-Industrial",
+                manufacturer: "PowerSystems Corp",
+                serial_number: "PS-PDU-2023-004",
+                status: "active",
+                installed_at: "2023-01-05",
+                last_maintenance: "2024-01-20",
+                next_maintenance: "2024-04-20",
+                sensors: [
+                    { value_category_id: 8, name: "Power Consumption", current_value: 125.5, unit: "kW", warning_min: 0, warning_max: 150, critical_min: 0, critical_max: 180 },
+                    { value_category_id: 1, name: "Temperature", current_value: 65, unit: "°F", warning_min: 60, warning_max: 80, critical_min: 55, critical_max: 85 }
+                ],
+                errors: 0,
+                lastUpdated: new Date().toISOString()
+            }
+        ];
+
+        // Sample roles based on database schema
+        const sampleRoles = [
+            {
+                id: 1,
+                name: "admin",
+                display_name: "System Administrator",
+                description: "Full system access with all permissions",
+                is_active: true,
+                created_at: "2023-01-01T00:00:00Z",
+                updated_at: "2023-01-01T00:00:00Z"
+            },
+            {
+                id: 2,
+                name: "manager",
+                display_name: "Operations Manager",
+                description: "Manage operations and view reports",
+                is_active: true,
+                created_at: "2023-01-01T00:00:00Z",
+                updated_at: "2023-01-01T00:00:00Z"
+            },
+            {
+                id: 3,
+                name: "technician",
+                display_name: "Maintenance Technician",
+                description: "Access to maintenance and monitoring functions",
+                is_active: true,
+                created_at: "2023-01-01T00:00:00Z",
+                updated_at: "2023-01-01T00:00:00Z"
+            },
+            {
+                id: 4,
+                name: "operator",
+                display_name: "Machine Operator",
+                description: "Basic monitoring and operation access",
+                is_active: true,
+                created_at: "2023-01-01T00:00:00Z",
+                updated_at: "2023-01-01T00:00:00Z"
+            },
+            {
+                id: 5,
+                name: "viewer",
+                display_name: "Read-Only Viewer",
+                description: "View-only access to dashboards and reports",
+                is_active: true,
+                created_at: "2023-01-01T00:00:00Z",
+                updated_at: "2023-01-01T00:00:00Z"
+            }
+        ];
+
+        // Sample users based on database schema
+        const sampleUsers = [
+            {
+                id: 1,
+                username: "admin",
+                email: "admin@techcorp.com",
+                first_name: "System",
+                last_name: "Administrator",
+                phone: "+1-555-0101",
+                date_of_birth: "1985-03-15",
+                gender: "other",
+                status: "active",
+                created_at: "2023-01-01T00:00:00Z",
+                updated_at: "2024-01-15T10:30:00Z",
+                last_login: new Date().toISOString(),
+                roles: [
+                    {
+                        role_id: 1,
+                        role_name: "admin",
+                        role_display_name: "System Administrator",
+                        assigned_at: "2023-01-01T00:00:00Z",
+                        is_active: true
+                    }
+                ],
+                profile: {
+                    bio: "System administrator with 10+ years experience in IoT systems management.",
+                    avatar_url: "",
+                    website: "https://techcorp.com",
+                    location: "San Francisco, CA",
+                    timezone: "America/Los_Angeles",
+                    language: "en"
+                }
+            },
+            {
+                id: 2,
+                username: "jsmith",
+                email: "john.smith@techcorp.com",
+                first_name: "John",
+                last_name: "Smith",
+                phone: "+1-555-0102",
+                date_of_birth: "1990-07-22",
+                gender: "male",
+                status: "active",
+                created_at: "2023-02-15T00:00:00Z",
+                updated_at: "2024-01-10T14:20:00Z",
+                last_login: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+                roles: [
+                    {
+                        role_id: 3,
+                        role_name: "technician",
+                        role_display_name: "Maintenance Technician",
+                        assigned_at: "2023-02-15T00:00:00Z",
+                        is_active: true
+                    }
+                ],
+                profile: {
+                    bio: "Senior maintenance technician specializing in manufacturing equipment.",
+                    avatar_url: "",
+                    website: "",
+                    location: "Detroit, MI",
+                    timezone: "America/Detroit",
+                    language: "en"
+                }
+            },
+            {
+                id: 3,
+                username: "sjohnson",
+                email: "sarah.johnson@techcorp.com",
+                first_name: "Sarah",
+                last_name: "Johnson",
+                phone: "+1-555-0103",
+                date_of_birth: "1988-11-08",
+                gender: "female",
+                status: "active",
+                created_at: "2023-03-01T00:00:00Z",
+                updated_at: "2024-01-12T09:15:00Z",
+                last_login: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+                roles: [
+                    {
+                        role_id: 2,
+                        role_name: "manager",
+                        role_display_name: "Operations Manager",
+                        assigned_at: "2023-03-01T00:00:00Z",
+                        is_active: true
+                    },
+                    {
+                        role_id: 3,
+                        role_name: "technician",
+                        role_display_name: "Maintenance Technician",
+                        assigned_at: "2023-06-15T00:00:00Z",
+                        is_active: true
+                    }
+                ],
+                profile: {
+                    bio: "Operations manager with technical background in HVAC systems.",
+                    avatar_url: "",
+                    website: "",
+                    location: "Chicago, IL",
+                    timezone: "America/Chicago",
+                    language: "en"
+                }
+            },
+            {
+                id: 4,
+                username: "mdavis",
+                email: "mike.davis@techcorp.com",
+                first_name: "Mike",
+                last_name: "Davis",
+                phone: "+1-555-0104",
+                date_of_birth: "1992-04-18",
+                gender: "male",
+                status: "active",
+                created_at: "2023-04-10T00:00:00Z",
+                updated_at: "2024-01-08T16:45:00Z",
+                last_login: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+                roles: [
+                    {
+                        role_id: 4,
+                        role_name: "operator",
+                        role_display_name: "Machine Operator",
+                        assigned_at: "2023-04-10T00:00:00Z",
+                        is_active: true
+                    }
+                ],
+                profile: {
+                    bio: "Machine operator with expertise in security systems monitoring.",
+                    avatar_url: "",
+                    website: "",
+                    location: "Phoenix, AZ",
+                    timezone: "America/Phoenix",
+                    language: "en"
+                }
+            },
+            {
+                id: 5,
+                username: "lchen",
+                email: "lisa.chen@techcorp.com",
+                first_name: "Lisa",
+                last_name: "Chen",
+                phone: "+1-555-0105",
+                date_of_birth: "1987-09-25",
+                gender: "female",
+                status: "active",
+                created_at: "2023-05-20T00:00:00Z",
+                updated_at: "2024-01-14T11:30:00Z",
+                last_login: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+                roles: [
+                    {
+                        role_id: 3,
+                        role_name: "technician",
+                        role_display_name: "Maintenance Technician",
+                        assigned_at: "2023-05-20T00:00:00Z",
+                        is_active: true
+                    }
+                ],
+                profile: {
+                    bio: "Energy systems specialist with focus on power distribution and efficiency.",
+                    avatar_url: "",
+                    website: "",
+                    location: "Seattle, WA",
+                    timezone: "America/Los_Angeles",
+                    language: "en"
+                }
+            },
+            {
+                id: 6,
+                username: "rgarcia",
+                email: "robert.garcia@techcorp.com",
+                first_name: "Robert",
+                last_name: "Garcia",
+                phone: "+1-555-0106",
+                date_of_birth: "1995-12-03",
+                gender: "male",
+                status: "inactive",
+                created_at: "2023-08-15T00:00:00Z",
+                updated_at: "2023-12-20T00:00:00Z",
+                last_login: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+                roles: [
+                    {
+                        role_id: 5,
+                        role_name: "viewer",
+                        role_display_name: "Read-Only Viewer",
+                        assigned_at: "2023-08-15T00:00:00Z",
+                        is_active: false
+                    }
+                ],
+                profile: {
+                    bio: "Former intern, now pursuing advanced degree in industrial engineering.",
+                    avatar_url: "",
+                    website: "",
+                    location: "Austin, TX",
+                    timezone: "America/Chicago",
+                    language: "en"
+                }
+            }
+        ];
+
+        // Current logged-in user (for demo purposes)
+        let currentUser = sampleUsers[0]; // Admin user
+
+        // Sample error reports based on database schema
+        const sampleErrorReports = [
+            {
+                id: 1,
+                machine_id: "MFG-001",
+                machine_name: "Production Line A",
+                error_code: "TEMP_HIGH_001",
+                severity: "critical",
+                title: "Temperature Threshold Exceeded",
+                description: "Machine temperature reached 92°F, exceeding critical threshold of 90°F. Automatic shutdown initiated to prevent damage.",
+                sensor_name: "Temperature",
+                sensor_value: 92,
+                sensor_unit: "°F",
+                threshold_exceeded: "Critical Max (90°F)",
+                timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+                resolved: false,
+                resolution_notes: "",
+                technician_assigned: "John Smith",
+                estimated_downtime: "2-4 hours",
+                category: "Manufacturing Equipment"
+            },
+            {
+                id: 2,
+                machine_id: "HVAC-002",
+                machine_name: "HVAC Unit B",
+                error_code: "FLOW_LOW_002",
+                severity: "warning",
+                title: "Air Flow Below Warning Level",
+                description: "Air flow rate dropped to 680 CFM, below warning threshold of 700 CFM. Filter replacement may be required.",
+                sensor_name: "Air Flow",
+                sensor_value: 680,
+                sensor_unit: "CFM",
+                threshold_exceeded: "Warning Min (700 CFM)",
+                timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
+                resolved: false,
+                resolution_notes: "",
+                technician_assigned: "Sarah Johnson",
+                estimated_downtime: "30 minutes",
+                category: "HVAC Systems"
+            },
+            {
+                id: 3,
+                machine_id: "SEC-003",
+                machine_name: "Security Camera 1",
+                error_code: "LIGHT_LOW_003",
+                severity: "info",
+                title: "Low Light Conditions Detected",
+                description: "Light level dropped to 45 lux, below optimal range. Night vision mode automatically activated.",
+                sensor_name: "Light Level",
+                sensor_value: 45,
+                sensor_unit: "lux",
+                threshold_exceeded: "Warning Min (100 lux)",
+                timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
+                resolved: true,
+                resolution_notes: "Night vision mode functioning normally. No action required.",
+                technician_assigned: "Mike Davis",
+                estimated_downtime: "0 minutes",
+                category: "Security Systems"
+            },
+            {
+                id: 4,
+                machine_id: "ENR-004",
+                machine_name: "Power Distribution Unit",
+                error_code: "POWER_HIGH_004",
+                severity: "warning",
+                title: "Power Consumption Above Normal",
+                description: "Power consumption reached 155 kW, exceeding warning threshold of 150 kW. Load balancing recommended.",
+                sensor_name: "Power Consumption",
+                sensor_value: 155,
+                sensor_unit: "kW",
+                threshold_exceeded: "Warning Max (150 kW)",
+                timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
+                resolved: false,
+                resolution_notes: "",
+                technician_assigned: "Lisa Chen",
+                estimated_downtime: "1 hour",
+                category: "Energy Management"
+            },
+            {
+                id: 5,
+                machine_id: "MFG-001",
+                machine_name: "Production Line A",
+                error_code: "VIB_HIGH_005",
+                severity: "critical",
+                title: "Excessive Vibration Detected",
+                description: "Vibration levels reached 1.2 mm/s, exceeding critical threshold of 1.0 mm/s. Bearing failure suspected.",
+                sensor_name: "Vibration",
+                sensor_value: 1.2,
+                sensor_unit: "mm/s",
+                threshold_exceeded: "Critical Max (1.0 mm/s)",
+                timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 24 hours ago
+                resolved: true,
+                resolution_notes: "Bearing replaced. Vibration levels returned to normal. Machine back online.",
+                technician_assigned: "John Smith",
+                estimated_downtime: "8 hours",
+                category: "Manufacturing Equipment"
+            },
+            {
+                id: 6,
+                machine_id: "HVAC-002",
+                machine_name: "HVAC Unit B",
+                error_code: "HUM_HIGH_006",
+                severity: "warning",
+                title: "Humidity Level Above Optimal",
+                description: "Humidity reached 65%, above warning threshold of 60%. Dehumidification system activated.",
+                sensor_name: "Humidity",
+                sensor_value: 65,
+                sensor_unit: "%",
+                threshold_exceeded: "Warning Max (60%)",
+                timestamp: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(), // 18 hours ago
+                resolved: true,
+                resolution_notes: "Dehumidification system calibrated. Humidity levels stabilized.",
+                technician_assigned: "Sarah Johnson",
+                estimated_downtime: "2 hours",
+                category: "HVAC Systems"
+            }
+        ];
+
+        const dataHandler = {
+            onDataChanged(data) {
+                currentData = data;
+                updateDashboard();
+                updateMachinesList();
+                updateDevicesList();
+                updateProfileData();
+                populateMachineSelect();
+                updateErrorReports();
+            }
+        };
+
+        async function initializeApp() {
+            if (window.dataSdk) {
+                const result = await window.dataSdk.init(dataHandler);
+                if (!result.isOk) {
+                    console.error("Failed to initialize data SDK");
+                }
+            }
+
+            if (window.elementSdk) {
+                await window.elementSdk.init({
+                    defaultConfig,
+                    render: async (config) => {
+                        document.getElementById('dashboard-title').textContent = config.dashboard_title || defaultConfig.dashboard_title;
+                        document.getElementById('company-name').textContent = config.company_name || defaultConfig.company_name;
+                    },
+                    mapToCapabilities: (config) => ({
+                        recolorables: [],
+                        borderables: [],
+                        fontEditable: undefined,
+                        fontSizeable: undefined
+                    }),
+                    mapToEditPanelValues: (config) => new Map([
+                        ["dashboard_title", config.dashboard_title || defaultConfig.dashboard_title],
+                        ["company_name", config.company_name || defaultConfig.company_name]
+                    ])
+                });
+            }
+
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+
+            // Initialize with sample data if no data exists
+            if (currentData.length === 0) {
+                loadSampleData();
+            }
+        }
+
+        function updateErrorReports() {
+            allErrorReports = [...sampleErrorReports];
+            filteredErrorReports = [...allErrorReports];
+            populateReportFilters();
+            renderErrorReports();
+        }
+
+        function populateReportFilters() {
+            const machineFilter = document.getElementById('report-machine-filter');
+            machineFilter.innerHTML = '<option value="">All Machines</option>';
+
+            const uniqueMachines = [...new Set(allErrorReports.map(report => report.machine_id))];
+            uniqueMachines.forEach(machineId => {
+                const machine = sampleMachines.find(m => m.machine_id === machineId);
+                const option = document.createElement('option');
+                option.value = machineId;
+                option.textContent = machine ? `${machine.machine_name} (${machineId})` : machineId;
+                machineFilter.appendChild(option);
+            });
+        }
+
+        function filterErrorReports() {
+            const machineFilter = document.getElementById('report-machine-filter').value;
+            const severityFilter = document.getElementById('report-severity-filter').value;
+
+            filteredErrorReports = allErrorReports.filter(report => {
+                const matchesMachine = !machineFilter || report.machine_id === machineFilter;
+                const matchesSeverity = !severityFilter || report.severity === severityFilter;
+                return matchesMachine && matchesSeverity;
+            });
+
+            renderErrorReports();
+        }
+
+        function renderErrorReports() {
+            const content = document.getElementById('error-reports-content');
+            
+            if (filteredErrorReports.length === 0) {
+                content.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                        <h3>No Error Reports Found</h3>
+                        <p>No error reports match the current filters.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort by timestamp (newest first)
+            const sortedReports = [...filteredErrorReports].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            let html = '';
+            sortedReports.forEach(report => {
+                const timeAgo = getTimeAgo(new Date(report.timestamp));
+                const statusIcon = report.resolved ? '✅' : '🔴';
+                const statusText = report.resolved ? 'Resolved' : 'Active';
+                
+                html += `
+                    <div class="error-report-card ${report.severity}">
+                        <div class="error-report-header">
+                            <div>
+                                <h3 style="margin: 0; color: #2c3e50;">${statusIcon} ${report.title}</h3>
+                                <p style="margin: 5px 0 0 0; color: #7f8c8d; font-size: 0.9em;">
+                                    ${report.machine_name} (${report.machine_id}) • ${timeAgo}
+                                </p>
+                            </div>
+                            <div style="text-align: right;">
+                                <span class="error-severity severity-${report.severity}">${report.severity}</span>
+                                <div style="margin-top: 5px; font-size: 0.9em; color: #7f8c8d;">
+                                    ${statusText}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin: 15px 0;">
+                            <p style="color: #2c3e50; line-height: 1.5;">${report.description}</p>
+                        </div>
+
+                        <div class="error-details">
+                            <div class="error-detail-item">
+                                <div class="error-detail-label">Error Code</div>
+                                <div class="error-detail-value">${report.error_code}</div>
+                            </div>
+                            <div class="error-detail-item">
+                                <div class="error-detail-label">Sensor</div>
+                                <div class="error-detail-value">${report.sensor_name}</div>
+                            </div>
+                            <div class="error-detail-item">
+                                <div class="error-detail-label">Reading</div>
+                                <div class="error-detail-value">${report.sensor_value}${report.sensor_unit}</div>
+                            </div>
+                            <div class="error-detail-item">
+                                <div class="error-detail-label">Threshold Exceeded</div>
+                                <div class="error-detail-value">${report.threshold_exceeded}</div>
+                            </div>
+                            <div class="error-detail-item">
+                                <div class="error-detail-label">Technician</div>
+                                <div class="error-detail-value">${report.technician_assigned}</div>
+                            </div>
+                            <div class="error-detail-item">
+                                <div class="error-detail-label">Est. Downtime</div>
+                                <div class="error-detail-value">${report.estimated_downtime}</div>
+                            </div>
+                        </div>
+
+                        ${report.resolved && report.resolution_notes ? `
+                            <div style="margin-top: 15px; padding: 15px; background: #d4edda; border-radius: 5px; border-left: 4px solid #27ae60;">
+                                <div class="error-detail-label" style="color: #155724;">Resolution Notes:</div>
+                                <div style="color: #155724; margin-top: 5px;">${report.resolution_notes}</div>
+                            </div>
+                        ` : ''}
+
+                        <div style="margin-top: 15px; display: flex; gap: 10px;">
+                            <button class="btn btn-primary" onclick="viewErrorDetails(${report.id})">View Details</button>
+                            ${!report.resolved ? `
+                                <button class="btn btn-success" onclick="markAsResolved(${report.id})">Mark Resolved</button>
+                            ` : ''}
+                            <button class="btn btn-warning" onclick="goToMachineFromError('${report.machine_id}')">View Machine</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            content.innerHTML = html;
+        }
+
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            if (diffInSeconds < 60) return 'Just now';
+            if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+            if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+            return `${Math.floor(diffInSeconds / 86400)} days ago`;
+        }
+
+        function viewErrorDetails(reportId) {
+            const report = allErrorReports.find(r => r.id === reportId);
+            if (!report) return;
+
+            let details = `Error Report Details:\n\n`;
+            details += `Title: ${report.title}\n`;
+            details += `Error Code: ${report.error_code}\n`;
+            details += `Machine: ${report.machine_name} (${report.machine_id})\n`;
+            details += `Category: ${report.category}\n`;
+            details += `Severity: ${report.severity.toUpperCase()}\n`;
+            details += `Status: ${report.resolved ? 'Resolved' : 'Active'}\n`;
+            details += `Timestamp: ${new Date(report.timestamp).toLocaleString()}\n\n`;
+            details += `Description:\n${report.description}\n\n`;
+            details += `Sensor Information:\n`;
+            details += `- Name: ${report.sensor_name}\n`;
+            details += `- Value: ${report.sensor_value}${report.sensor_unit}\n`;
+            details += `- Threshold Exceeded: ${report.threshold_exceeded}\n\n`;
+            details += `Assignment:\n`;
+            details += `- Technician: ${report.technician_assigned}\n`;
+            details += `- Estimated Downtime: ${report.estimated_downtime}\n`;
+            
+            if (report.resolved && report.resolution_notes) {
+                details += `\nResolution:\n${report.resolution_notes}`;
+            }
+
+            showCustomAlert('Error Report Details', details);
+        }
+
+        function markAsResolved(reportId) {
+            const reportIndex = allErrorReports.findIndex(r => r.id === reportId);
+            if (reportIndex === -1) return;
+
+            // Create inline resolution form
+            const confirmDiv = document.createElement('div');
+            confirmDiv.className = 'alert alert-success';
+            confirmDiv.innerHTML = `
+                <strong>Mark Error as Resolved:</strong>
+                <div style="margin: 10px 0;">
+                    <textarea placeholder="Enter resolution notes..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-height: 60px;" id="resolution-notes-${reportId}"></textarea>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-success" onclick="confirmResolveError(${reportId}); this.parentElement.parentElement.remove();">Confirm Resolution</button>
+                    <button class="btn btn-primary" onclick="this.parentElement.parentElement.remove();" style="margin-left: 10px;">Cancel</button>
+                </div>
+            `;
+            
+            const container = document.querySelector('.dashboard-container');
+            container.insertBefore(confirmDiv, container.firstChild);
+        }
+
+        function confirmResolveError(reportId) {
+            const reportIndex = allErrorReports.findIndex(r => r.id === reportId);
+            if (reportIndex === -1) return;
+
+            const resolutionNotes = document.getElementById(`resolution-notes-${reportId}`)?.value || 'Error marked as resolved.';
+            
+            allErrorReports[reportIndex].resolved = true;
+            allErrorReports[reportIndex].resolution_notes = resolutionNotes;
+            
+            filterErrorReports(); // Refresh the display
+            showCustomAlert('Success', 'Error report marked as resolved successfully!');
+        }
+
+        function goToMachineFromError(machineId) {
+            showTab('machines');
+            // Scroll to the machine card (if needed)
+            setTimeout(() => {
+                const machineCards = document.querySelectorAll('.machine-card');
+                machineCards.forEach(card => {
+                    if (card.textContent.includes(machineId)) {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        card.style.boxShadow = '0 0 20px rgba(52, 152, 219, 0.5)';
+                        setTimeout(() => {
+                            card.style.boxShadow = '';
+                        }, 3000);
+                    }
+                });
+            }, 100);
+        }
+
+        function printErrorReport() {
+            const machineFilter = document.getElementById('report-machine-filter').value;
+            const severityFilter = document.getElementById('report-severity-filter').value;
+            
+            let reportTitle = 'Machine Error Reports';
+            if (machineFilter || severityFilter) {
+                reportTitle += ' - Filtered';
+                if (machineFilter) {
+                    const machine = sampleMachines.find(m => m.machine_id === machineFilter);
+                    reportTitle += ` (Machine: ${machine ? machine.machine_name : machineFilter})`;
+                }
+                if (severityFilter) {
+                    reportTitle += ` (Severity: ${severityFilter.charAt(0).toUpperCase() + severityFilter.slice(1)})`;
+                }
+            }
+
+            // Create print content
+            const printContent = document.createElement('div');
+            printContent.className = 'print-content';
+            
+            let printHTML = `
+                <div class="print-only" style="margin-bottom: 30px; text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px;">
+                    <h1 style="margin: 0; color: #2c3e50;">${document.getElementById('company-name').textContent}</h1>
+                    <h2 style="margin: 10px 0; color: #7f8c8d;">${reportTitle}</h2>
+                    <p style="margin: 0; color: #7f8c8d;">Generated on: ${new Date().toLocaleString()}</p>
+                    <p style="margin: 5px 0 0 0; color: #7f8c8d;">Total Reports: ${filteredErrorReports.length}</p>
+                </div>
+            `;
+
+            // Add summary statistics
+            const criticalCount = filteredErrorReports.filter(r => r.severity === 'critical').length;
+            const warningCount = filteredErrorReports.filter(r => r.severity === 'warning').length;
+            const infoCount = filteredErrorReports.filter(r => r.severity === 'info').length;
+            const activeCount = filteredErrorReports.filter(r => !r.resolved).length;
+            const resolvedCount = filteredErrorReports.filter(r => r.resolved).length;
+
+            printHTML += `
+                <div class="print-only" style="margin-bottom: 30px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                        <h3 style="margin: 0 0 10px 0; color: #2c3e50;">By Severity</h3>
+                        <p style="margin: 5px 0; color: #e74c3c;">Critical: ${criticalCount}</p>
+                        <p style="margin: 5px 0; color: #f39c12;">Warning: ${warningCount}</p>
+                        <p style="margin: 5px 0; color: #3498db;">Info: ${infoCount}</p>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                        <h3 style="margin: 0 0 10px 0; color: #2c3e50;">By Status</h3>
+                        <p style="margin: 5px 0; color: #e74c3c;">Active: ${activeCount}</p>
+                        <p style="margin: 5px 0; color: #27ae60;">Resolved: ${resolvedCount}</p>
+                    </div>
+                </div>
+            `;
+
+            // Add individual reports
+            const sortedReports = [...filteredErrorReports].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            sortedReports.forEach((report, index) => {
+                const statusIcon = report.resolved ? '✅' : '🔴';
+                const statusText = report.resolved ? 'Resolved' : 'Active';
+                
+                printHTML += `
+                    <div class="error-report-card ${report.severity}" style="margin-bottom: 25px;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                            <div>
+                                <h3 style="margin: 0; color: #2c3e50; font-size: 1.2em;">${index + 1}. ${statusIcon} ${report.title}</h3>
+                                <p style="margin: 5px 0 0 0; color: #7f8c8d; font-size: 0.9em;">
+                                    ${report.machine_name} (${report.machine_id}) • ${new Date(report.timestamp).toLocaleString()}
+                                </p>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="padding: 4px 12px; border-radius: 15px; font-size: 0.8em; font-weight: bold; text-transform: uppercase; background: ${report.severity === 'critical' ? '#e74c3c' : report.severity === 'warning' ? '#f39c12' : '#3498db'}; color: white;">${report.severity}</span>
+                                <div style="margin-top: 5px; font-size: 0.9em; color: #7f8c8d;">
+                                    ${statusText}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin: 15px 0;">
+                            <p style="color: #2c3e50; line-height: 1.5; margin: 0;">${report.description}</p>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 15px 0;">
+                            <div>
+                                <strong style="color: #2c3e50; font-size: 0.9em;">Error Code:</strong><br>
+                                <span style="color: #7f8c8d;">${report.error_code}</span>
+                            </div>
+                            <div>
+                                <strong style="color: #2c3e50; font-size: 0.9em;">Sensor Reading:</strong><br>
+                                <span style="color: #7f8c8d;">${report.sensor_name}: ${report.sensor_value}${report.sensor_unit}</span>
+                            </div>
+                            <div>
+                                <strong style="color: #2c3e50; font-size: 0.9em;">Threshold:</strong><br>
+                                <span style="color: #7f8c8d;">${report.threshold_exceeded}</span>
+                            </div>
+                            <div>
+                                <strong style="color: #2c3e50; font-size: 0.9em;">Technician:</strong><br>
+                                <span style="color: #7f8c8d;">${report.technician_assigned}</span>
+                            </div>
+                            <div>
+                                <strong style="color: #2c3e50; font-size: 0.9em;">Est. Downtime:</strong><br>
+                                <span style="color: #7f8c8d;">${report.estimated_downtime}</span>
+                            </div>
+                            <div>
+                                <strong style="color: #2c3e50; font-size: 0.9em;">Category:</strong><br>
+                                <span style="color: #7f8c8d;">${report.category}</span>
+                            </div>
+                        </div>
+
+                        ${report.resolved && report.resolution_notes ? `
+                            <div style="margin-top: 15px; padding: 15px; background: #d4edda; border-radius: 5px; border-left: 4px solid #27ae60;">
+                                <strong style="color: #155724; font-size: 0.9em;">Resolution Notes:</strong><br>
+                                <span style="color: #155724;">${report.resolution_notes}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            printContent.innerHTML = printHTML;
+            document.body.appendChild(printContent);
+            
+            // Print
+            window.print();
+            
+            // Clean up
+            setTimeout(() => {
+                document.body.removeChild(printContent);
+            }, 1000);
+        }
+
+        function updateCurrentTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString();
+        }
+
+        function loadSampleData() {
+            updateDashboard();
+            updateMachinesList();
+            updateDevicesList();
+            updateProfileData();
+            populateMachineSelect();
+            updateErrorReports();
+        }
+
+        function showTab(tabName) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            const tabButtons = document.querySelectorAll('.tab');
+            tabButtons.forEach(button => button.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function updateDashboard() {
+            const content = document.getElementById('dashboard-content');
+            const categories = {};
+
+            // Group machines by category using category names
+            sampleMachines.forEach(machine => {
+                const categoryInfo = machineCategories.find(cat => cat.id === machine.category_id);
+                const categoryName = categoryInfo ? categoryInfo.category_name : machine.category;
+                
+                if (!categories[categoryName]) {
+                    categories[categoryName] = {
+                        machines: [],
+                        info: categoryInfo
+                    };
+                }
+                categories[categoryName].machines.push(machine);
+            });
+
+            let html = '';
+            Object.keys(categories).forEach(categoryName => {
+                const categoryData = categories[categoryName];
+                const categoryInfo = categoryData.info;
+                
+                html += `
+                    <div class="category-section">
+                        <h3 class="category-title" style="border-color: ${categoryInfo?.color || '#3498db'}">
+                            ${categoryInfo?.icon || '📊'} ${categoryName}
+                        </h3>
+                        <div class="machine-grid">
+                `;
+
+                categoryData.machines.forEach(machine => {
+                    const statusClass = getStatusClass(machine.status);
+                    const statusDisplay = machine.status.charAt(0).toUpperCase() + machine.status.slice(1);
+                    
+                    html += `
+                        <div class="machine-card" style="background: linear-gradient(135deg, ${categoryInfo?.color || '#667eea'} 0%, ${adjustColor(categoryInfo?.color || '#667eea', -20)} 100%)">
+                            <div class="machine-header">
+                                <h4 class="machine-name">${machine.machine_name}</h4>
+                                <span class="status-badge ${statusClass}">${statusDisplay}</span>
+                            </div>
+                            <div class="machine-info">
+                                <p><strong>ID:</strong> ${machine.machine_id}</p>
+                                <p><strong>Location:</strong> ${machine.location}</p>
+                                <p><strong>Model:</strong> ${machine.model}</p>
+                                <p><strong>Sensors:</strong> ${machine.sensors.length}</p>
+                                <p><strong>Errors:</strong> ${machine.errors}</p>
+                                <p><strong>Next Maintenance:</strong> ${new Date(machine.next_maintenance).toLocaleDateString()}</p>
+                            </div>
+                            <div class="machine-actions">
+                                <button class="btn btn-primary" onclick="showMachineDetails('${machine.machine_id}')">View Details</button>
+                                <button class="btn btn-success" onclick="showAIDiagnosis('${machine.machine_id}')">AI Diagnosis</button>
+                                <button class="btn btn-warning" onclick="goToLiveMonitor('${machine.machine_id}')">Live Monitor</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            content.innerHTML = html;
+        }
+
+        function getStatusClass(status) {
+            switch(status) {
+                case 'active': return 'status-online';
+                case 'inactive': return 'status-offline';
+                case 'maintenance': return 'status-warning';
+                case 'error': return 'status-offline';
+                default: return 'status-offline';
+            }
+        }
+
+        function adjustColor(color, percent) {
+            const num = parseInt(color.replace("#",""), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
+        }
+
+        function updateMachinesList() {
+            const content = document.getElementById('machines-content');
+            let html = '<div class="machine-grid">';
+
+            sampleMachines.forEach(machine => {
+                const statusClass = getStatusClass(machine.status);
+                const statusDisplay = machine.status.charAt(0).toUpperCase() + machine.status.slice(1);
+                const categoryInfo = machineCategories.find(cat => cat.id === machine.category_id);
+                
+                html += `
+                    <div class="machine-card" style="background: linear-gradient(135deg, ${categoryInfo?.color || '#667eea'} 0%, ${adjustColor(categoryInfo?.color || '#667eea', -20)} 100%)">
+                        <div class="machine-header">
+                            <h4 class="machine-name">${machine.machine_name}</h4>
+                            <span class="status-badge ${statusClass}">${statusDisplay}</span>
+                        </div>
+                        <div class="machine-info">
+                            <p><strong>ID:</strong> ${machine.machine_id}</p>
+                            <p><strong>Category:</strong> ${categoryInfo?.category_name || machine.category}</p>
+                            <p><strong>Location:</strong> ${machine.location}</p>
+                            <p><strong>Model:</strong> ${machine.model}</p>
+                            <p><strong>Manufacturer:</strong> ${machine.manufacturer}</p>
+                            <p><strong>Serial:</strong> ${machine.serial_number}</p>
+                            <p><strong>Sensors:</strong> ${machine.sensors.length}</p>
+                            <p><strong>Errors:</strong> ${machine.errors}</p>
+                            <p><strong>Last Maintenance:</strong> ${new Date(machine.last_maintenance).toLocaleDateString()}</p>
+                        </div>
+                        <div class="machine-actions">
+                            <button class="btn btn-primary" onclick="showMachineDetails('${machine.machine_id}')">Status</button>
+                            <button class="btn btn-success" onclick="showAIDiagnosis('${machine.machine_id}')">AI Diagnosis</button>
+                            <button class="btn btn-warning" onclick="goToLiveMonitor('${machine.machine_id}')">Live Monitor</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            content.innerHTML = html;
+        }
+
+        function populateMachineSelect() {
+            const select = document.getElementById('machine-select');
+            select.innerHTML = '<option value="">Choose a machine...</option>';
+
+            sampleMachines.forEach(machine => {
+                const option = document.createElement('option');
+                option.value = machine.machine_id;
+                option.textContent = `${machine.machine_name} (${machine.machine_id})`;
+                select.appendChild(option);
+            });
+        }
+
+        function loadMachineSensors() {
+            const machineId = document.getElementById('machine-select').value;
+            const sensorData = document.getElementById('sensor-data');
+
+            if (!machineId) {
+                sensorData.style.display = 'none';
+                return;
+            }
+
+            const machine = sampleMachines.find(m => m.machine_id === machineId);
+            if (!machine) return;
+
+            sensorData.style.display = 'block';
+            const sensorsGrid = document.getElementById('sensors-grid');
+
+            let html = '';
+            machine.sensors.forEach((sensor, index) => {
+                const statusColor = getSensorStatusColor(sensor);
+                const statusText = getSensorStatusText(sensor);
+                
+                html += `
+                    <div class="sensor-card" style="border-left-color: ${statusColor}">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h4>${sensor.name}</h4>
+                            <span style="color: ${statusColor}; font-weight: bold; font-size: 0.9em;">${statusText}</span>
+                        </div>
+                        <div class="sensor-value">${sensor.current_value}${sensor.unit}</div>
+                        <div style="font-size: 0.85em; color: #666; margin: 10px 0;">
+                            <div>Warning: ${sensor.warning_min} - ${sensor.warning_max}${sensor.unit}</div>
+                            <div>Critical: ${sensor.critical_min} - ${sensor.critical_max}${sensor.unit}</div>
+                        </div>
+                        <button class="btn btn-primary" onclick="showSensorChart('${machineId}', ${index})">View Timeline</button>
+                    </div>
+                `;
+            });
+
+            sensorsGrid.innerHTML = html;
+        }
+
+        function getSensorStatusColor(sensor) {
+            const value = sensor.current_value;
+            if (value < sensor.critical_min || value > sensor.critical_max) {
+                return '#e74c3c'; // Critical - Red
+            } else if (value < sensor.warning_min || value > sensor.warning_max) {
+                return '#f39c12'; // Warning - Orange
+            } else {
+                return '#27ae60'; // Normal - Green
+            }
+        }
+
+        function getSensorStatusText(sensor) {
+            const value = sensor.current_value;
+            if (value < sensor.critical_min || value > sensor.critical_max) {
+                return 'CRITICAL';
+            } else if (value < sensor.warning_min || value > sensor.warning_max) {
+                return 'WARNING';
+            } else {
+                return 'NORMAL';
+            }
+        }
+
+        function showSensorChart(machineId, sensorIndex) {
+            const machine = sampleMachines.find(m => m.machine_id === machineId);
+            if (!machine) return;
+
+            const sensor = machine.sensors[sensorIndex];
+            const chartContainer = document.getElementById('chart-container');
+            chartContainer.style.display = 'block';
+
+            // Generate sample time series data based on current value and thresholds
+            const labels = [];
+            const data = [];
+            const warningMinData = [];
+            const warningMaxData = [];
+            const criticalMinData = [];
+            const criticalMaxData = [];
+            const now = new Date();
+
+            const baseValue = sensor.current_value;
+            const variance = (sensor.warning_max - sensor.warning_min) * 0.1; // 10% variance
+
+            for (let i = 23; i >= 0; i--) {
+                const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+                labels.push(time.toLocaleTimeString());
+                
+                // Generate realistic data around current value with some variance
+                const randomVariance = (Math.random() - 0.5) * variance;
+                let value = baseValue + randomVariance;
+                
+                // Ensure value stays within reasonable bounds
+                value = Math.max(sensor.critical_min, Math.min(sensor.critical_max, value));
+                
+                data.push(parseFloat(value.toFixed(2)));
+                warningMinData.push(sensor.warning_min);
+                warningMaxData.push(sensor.warning_max);
+                criticalMinData.push(sensor.critical_min);
+                criticalMaxData.push(sensor.critical_max);
+            }
+
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            const ctx = document.getElementById('sensor-chart').getContext('2d');
+            currentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: `${sensor.name} (${sensor.unit})`,
+                            data: data,
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointRadius: 4
+                        },
+                        {
+                            label: 'Warning Min',
+                            data: warningMinData,
+                            borderColor: '#f39c12',
+                            backgroundColor: 'transparent',
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Warning Max',
+                            data: warningMaxData,
+                            borderColor: '#f39c12',
+                            backgroundColor: 'transparent',
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Critical Min',
+                            data: criticalMinData,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'transparent',
+                            borderDash: [10, 5],
+                            pointRadius: 0,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Critical Max',
+                            data: criticalMaxData,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'transparent',
+                            borderDash: [10, 5],
+                            pointRadius: 0,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${machine.machine_name} - ${sensor.name} Timeline`
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: `${sensor.name} (${sensor.unit})`
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateDevicesList() {
+            const content = document.getElementById('devices-list');
+            let html = '<div class="machine-grid">';
+
+            sampleMachines.forEach(machine => {
+                const statusClass = getStatusClass(machine.status);
+                const statusDisplay = machine.status.charAt(0).toUpperCase() + machine.status.slice(1);
+                const categoryInfo = machineCategories.find(cat => cat.id === machine.category_id);
+                
+                html += `
+                    <div class="machine-card" style="background: linear-gradient(135deg, ${categoryInfo?.color || '#667eea'} 0%, ${adjustColor(categoryInfo?.color || '#667eea', -20)} 100%)">
+                        <div class="machine-header">
+                            <h4 class="machine-name">${machine.machine_name}</h4>
+                            <span class="status-badge ${statusClass}">${statusDisplay}</span>
+                        </div>
+                        <div class="machine-info">
+                            <p><strong>Machine ID:</strong> ${machine.machine_id}</p>
+                            <p><strong>Category:</strong> ${categoryInfo?.category_name || machine.category}</p>
+                            <p><strong>Location:</strong> ${machine.location}</p>
+                            <p><strong>Model:</strong> ${machine.model}</p>
+                            <p><strong>Manufacturer:</strong> ${machine.manufacturer}</p>
+                            <p><strong>Serial Number:</strong> ${machine.serial_number}</p>
+                            <p><strong>Installed:</strong> ${new Date(machine.installed_at).toLocaleDateString()}</p>
+                        </div>
+                        <div class="machine-actions">
+                            <button class="btn btn-warning" onclick="editDevice('${machine.machine_id}')">Edit</button>
+                            <button class="btn btn-danger" onclick="confirmDeleteDevice('${machine.machine_id}')">Delete</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            content.innerHTML = html;
+        }
+
+        function updateProfileData() {
+            const content = document.getElementById('profile-content');
+            const user = currentUser;
+            const userRoles = user.roles.filter(r => r.is_active).map(r => r.role_display_name).join(', ');
+            
+            let html = `
+                <div class="user-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <div>
+                        <h3 style="color: white; margin: 0 0 15px 0;">👤 Current User Profile</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                            <div>
+                                <p><strong>Username:</strong> ${user.username}</p>
+                                <p><strong>Name:</strong> ${user.first_name} ${user.last_name}</p>
+                                <p><strong>Email:</strong> ${user.email}</p>
+                                <p><strong>Phone:</strong> ${user.phone || 'Not provided'}</p>
+                            </div>
+                            <div>
+                                <p><strong>Roles:</strong> ${userRoles}</p>
+                                <p><strong>Status:</strong> <span style="text-transform: capitalize; padding: 2px 8px; background: ${user.status === 'active' ? '#27ae60' : '#e74c3c'}; border-radius: 10px; font-size: 0.9em;">${user.status}</span></p>
+                                <p><strong>Gender:</strong> ${user.gender ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1) : 'Not specified'}</p>
+                                <p><strong>Date of Birth:</strong> ${user.date_of_birth ? new Date(user.date_of_birth).toLocaleDateString() : 'Not provided'}</p>
+                            </div>
+                            <div>
+                                <p><strong>Location:</strong> ${user.profile.location || 'Not provided'}</p>
+                                <p><strong>Timezone:</strong> ${user.profile.timezone || 'Not set'}</p>
+                                <p><strong>Language:</strong> ${user.profile.language.toUpperCase()}</p>
+                                <p><strong>Last Login:</strong> ${new Date(user.last_login).toLocaleString()}</p>
+                            </div>
+                        </div>
+                        ${user.profile.bio ? `
+                            <div style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                                <strong>Bio:</strong><br>
+                                <span style="font-style: italic;">${user.profile.bio}</span>
+                            </div>
+                        ` : ''}
+                        ${user.profile.website ? `
+                            <p style="margin-top: 10px;"><strong>Website:</strong> <a href="${user.profile.website}" target="_blank" style="color: #fff; text-decoration: underline;">${user.profile.website}</a></p>
+                        ` : ''}
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button class="btn btn-primary" onclick="editCurrentUser()" style="background: rgba(255,255,255,0.2); border: 2px solid white;">✏️ Edit Profile</button>
+                        <button class="btn btn-warning" onclick="changePassword()" style="background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.5);">🔒 Change Password</button>
+                    </div>
+                </div>
+            `;
+
+            // Show user management section if current user is admin
+            const hasAdminRole = user.roles.some(r => r.role_name === 'admin' && r.is_active);
+            if (hasAdminRole) {
+                html += `
+                    <div style="margin-top: 30px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 style="color: #2c3e50; margin: 0;">👥 User Management</h3>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-success" onclick="addUser()">➕ Add New User</button>
+                                <button class="btn btn-primary" onclick="manageRoles()">🛡️ Manage Roles</button>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center;">
+                            <div class="form-group" style="margin: 0;">
+                                <label for="user-status-filter">Filter by Status:</label>
+                                <select id="user-status-filter" class="form-control" onchange="filterUsers()" style="width: 150px;">
+                                    <option value="">All Status</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="suspended">Suspended</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label for="user-role-filter">Filter by Role:</label>
+                                <select id="user-role-filter" class="form-control" onchange="filterUsers()" style="width: 180px;">
+                                    <option value="">All Roles</option>
+                                    ${sampleRoles.map(role => `<option value="${role.name}">${role.display_name}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div id="users-list">
+                `;
+
+                // Display all users except current user
+                const otherUsers = sampleUsers.filter(u => u.id !== user.id);
+                otherUsers.forEach(otherUser => {
+                    const otherUserRoles = otherUser.roles.filter(r => r.is_active).map(r => r.role_display_name).join(', ');
+                    const statusColor = otherUser.status === 'active' ? '#27ae60' : otherUser.status === 'inactive' ? '#f39c12' : '#e74c3c';
+                    const lastLoginAgo = getTimeAgo(new Date(otherUser.last_login));
+                    
+                    html += `
+                        <div class="user-card user-item" data-status="${otherUser.status}" data-roles="${otherUser.roles.map(r => r.role_name).join(',')}">
+                            <div style="flex: 1;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                    <h4 style="margin: 0; color: #2c3e50;">${otherUser.first_name} ${otherUser.last_name}</h4>
+                                    <span style="padding: 4px 12px; border-radius: 15px; font-size: 0.8em; font-weight: bold; background: ${statusColor}; color: white; text-transform: uppercase;">${otherUser.status}</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                                    <div>
+                                        <p style="margin: 5px 0;"><strong>Username:</strong> ${otherUser.username}</p>
+                                        <p style="margin: 5px 0;"><strong>Email:</strong> ${otherUser.email}</p>
+                                        <p style="margin: 5px 0;"><strong>Phone:</strong> ${otherUser.phone || 'Not provided'}</p>
+                                    </div>
+                                    <div>
+                                        <p style="margin: 5px 0;"><strong>Roles:</strong> ${otherUserRoles}</p>
+                                        <p style="margin: 5px 0;"><strong>Location:</strong> ${otherUser.profile.location || 'Not provided'}</p>
+                                        <p style="margin: 5px 0;"><strong>Last Login:</strong> ${lastLoginAgo}</p>
+                                    </div>
+                                </div>
+                                <p style="margin: 10px 0 0 0; color: #7f8c8d; font-size: 0.9em;"><strong>Member since:</strong> ${new Date(otherUser.created_at).toLocaleDateString()}</p>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px; min-width: 120px;">
+                                <button class="btn btn-primary" onclick="editUser(${otherUser.id})" style="font-size: 0.9em;">✏️ Edit</button>
+                                <button class="btn btn-warning" onclick="manageUserRoles(${otherUser.id})" style="font-size: 0.9em;">🛡️ Roles</button>
+                                ${otherUser.status === 'active' ? 
+                                    `<button class="btn btn-danger" onclick="suspendUser(${otherUser.id})" style="font-size: 0.9em;">⏸️ Suspend</button>` :
+                                    `<button class="btn btn-success" onclick="activateUser(${otherUser.id})" style="font-size: 0.9em;">▶️ Activate</button>`
+                                }
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = html;
+        }
+
+        function showMachineDetails(machineId) {
+            const machine = sampleMachines.find(m => m.machine_id === machineId);
+            if (!machine) return;
+
+            const categoryInfo = machineCategories.find(cat => cat.id === machine.category_id);
+            
+            let details = `Machine Details:\n\n`;
+            details += `Name: ${machine.machine_name}\n`;
+            details += `ID: ${machine.machine_id}\n`;
+            details += `Status: ${machine.status.toUpperCase()}\n`;
+            details += `Category: ${categoryInfo?.category_name || machine.category}\n`;
+            details += `Location: ${machine.location}\n`;
+            details += `Model: ${machine.model}\n`;
+            details += `Manufacturer: ${machine.manufacturer}\n`;
+            details += `Serial Number: ${machine.serial_number}\n`;
+            details += `Installed: ${new Date(machine.installed_at).toLocaleDateString()}\n`;
+            details += `Last Maintenance: ${new Date(machine.last_maintenance).toLocaleDateString()}\n`;
+            details += `Next Maintenance: ${new Date(machine.next_maintenance).toLocaleDateString()}\n`;
+            details += `Errors: ${machine.errors}\n\n`;
+            details += `Sensor Readings:\n`;
+            machine.sensors.forEach(sensor => {
+                const status = getSensorStatusText(sensor);
+                details += `- ${sensor.name}: ${sensor.current_value}${sensor.unit} [${status}]\n`;
+                details += `  Thresholds: Warning (${sensor.warning_min}-${sensor.warning_max}), Critical (${sensor.critical_min}-${sensor.critical_max})\n`;
+            });
+
+            showCustomAlert('Machine Details', details);
+        }
+
+        function showAIDiagnosis(machineId) {
+            const machine = sampleMachines.find(m => m.machine_id === machineId);
+            if (!machine) return;
+
+            const categoryInfo = machineCategories.find(cat => cat.id === machine.category_id);
+            let diagnosis = `🤖 AI Analysis for ${machine.machine_name} (${machine.machine_id})\n\n`;
+            
+            // Analyze sensor readings
+            let criticalSensors = [];
+            let warningSensors = [];
+            let normalSensors = [];
+            
+            machine.sensors.forEach(sensor => {
+                const status = getSensorStatusText(sensor);
+                if (status === 'CRITICAL') {
+                    criticalSensors.push(sensor);
+                } else if (status === 'WARNING') {
+                    warningSensors.push(sensor);
+                } else {
+                    normalSensors.push(sensor);
+                }
+            });
+
+            // Overall system status
+            if (criticalSensors.length > 0) {
+                diagnosis += "🔴 SYSTEM STATUS: CRITICAL ALERT\n";
+                diagnosis += `• ${criticalSensors.length} sensor(s) in critical state\n`;
+                diagnosis += "• Immediate intervention required\n";
+                diagnosis += "• Production/operation may be compromised\n\n";
+                
+                diagnosis += "Critical Sensors:\n";
+                criticalSensors.forEach(sensor => {
+                    diagnosis += `• ${sensor.name}: ${sensor.current_value}${sensor.unit} (Critical range: ${sensor.critical_min}-${sensor.critical_max}${sensor.unit})\n`;
+                });
+                
+                diagnosis += "\n🚨 IMMEDIATE ACTIONS REQUIRED:\n";
+                diagnosis += "• Stop machine operation if safe to do so\n";
+                diagnosis += "• Dispatch maintenance team immediately\n";
+                diagnosis += "• Check safety systems and emergency protocols\n";
+                diagnosis += "• Document all readings for maintenance report\n";
+                
+            } else if (warningSensors.length > 0 || machine.status === 'maintenance') {
+                diagnosis += "⚠️ SYSTEM STATUS: ATTENTION REQUIRED\n";
+                diagnosis += `• ${warningSensors.length} sensor(s) showing warning levels\n`;
+                diagnosis += "• Performance degradation possible\n";
+                diagnosis += "• Preventive action recommended\n\n";
+                
+                if (warningSensors.length > 0) {
+                    diagnosis += "Warning Sensors:\n";
+                    warningSensors.forEach(sensor => {
+                        diagnosis += `• ${sensor.name}: ${sensor.current_value}${sensor.unit} (Warning range: ${sensor.warning_min}-${sensor.warning_max}${sensor.unit})\n`;
+                    });
+                }
+                
+                diagnosis += "\n📋 RECOMMENDED ACTIONS:\n";
+                diagnosis += "• Schedule inspection within 24-48 hours\n";
+                diagnosis += "• Check sensor calibration and connections\n";
+                diagnosis += "• Review recent maintenance logs\n";
+                diagnosis += "• Monitor trends for pattern analysis\n";
+                
+            } else {
+                diagnosis += "✅ SYSTEM STATUS: OPTIMAL PERFORMANCE\n";
+                diagnosis += "• All sensors operating within normal parameters\n";
+                diagnosis += "• No immediate maintenance required\n";
+                diagnosis += "• System performing as expected\n\n";
+                
+                diagnosis += "📊 OPTIMIZATION RECOMMENDATIONS:\n";
+                diagnosis += `• Next scheduled maintenance: ${new Date(machine.next_maintenance).toLocaleDateString()}\n`;
+                diagnosis += "• Continue regular monitoring schedule\n";
+                diagnosis += "• Consider efficiency optimization analysis\n";
+            }
+
+            // Category-specific recommendations
+            diagnosis += "\n🔧 CATEGORY-SPECIFIC INSIGHTS:\n";
+            switch(categoryInfo?.category_code) {
+                case 'MFG':
+                    diagnosis += "• Manufacturing Equipment: Monitor vibration patterns for bearing wear\n";
+                    diagnosis += "• Check lubrication systems and belt tensions\n";
+                    diagnosis += "• Verify production quality metrics correlation\n";
+                    break;
+                case 'HVAC':
+                    diagnosis += "• HVAC System: Check air filter condition and replacement schedule\n";
+                    diagnosis += "• Verify refrigerant levels and system pressures\n";
+                    diagnosis += "• Monitor energy consumption patterns\n";
+                    break;
+                case 'SEC':
+                    diagnosis += "• Security System: Verify camera positioning and lens cleanliness\n";
+                    diagnosis += "• Check network connectivity and recording systems\n";
+                    diagnosis += "• Review motion detection sensitivity settings\n";
+                    break;
+                case 'ENR':
+                    diagnosis += "• Energy Management: Analyze power consumption trends\n";
+                    diagnosis += "• Check for power quality issues and harmonics\n";
+                    diagnosis += "• Verify load balancing across phases\n";
+                    break;
+            }
+
+            diagnosis += `\n📈 TREND ANALYSIS:\n`;
+            diagnosis += "• Historical data shows stable operation patterns\n";
+            diagnosis += "• Seasonal variations within expected ranges\n";
+            diagnosis += "• Recommend continued monitoring for predictive maintenance\n";
+
+            document.getElementById('ai-content').innerHTML = `<pre style="white-space: pre-wrap; font-family: inherit; line-height: 1.4;">${diagnosis}</pre>`;
+            document.getElementById('ai-modal').style.display = 'block';
+        }
+
+        function goToLiveMonitor(machineId) {
+            showTab('monitor');
+            document.getElementById('machine-select').value = machineId;
+            loadMachineSensors();
+        }
+
+        function showAddDeviceForm() {
+            document.getElementById('device-form').reset();
+            document.getElementById('device-modal').style.display = 'block';
+        }
+
+        async function addDevice(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('device-name').value;
+            const category = document.getElementById('device-category').value;
+            const location = document.getElementById('device-location').value;
+
+            if (window.dataSdk && currentData.length < 999) {
+                const result = await window.dataSdk.create({
+                    type: 'device',
+                    name: name,
+                    category: category,
+                    location: location,
+                    status: 'offline',
+                    sensor_data: JSON.stringify([]),
+                    error_count: 0,
+                    created_at: new Date().toISOString()
+                });
+
+                if (result.isOk) {
+                    closeModal('device-modal');
+                    showCustomAlert('Success', 'Device added successfully!');
+                } else {
+                    showCustomAlert('Error', 'Failed to add device. Please try again.');
+                }
+            } else if (currentData.length >= 999) {
+                showCustomAlert('Error', 'Maximum limit of 999 devices reached. Please delete some devices first.');
+            } else {
+                // Fallback for demo
+                closeModal('device-modal');
+                showCustomAlert('Success', 'Device added successfully! (Demo mode)');
+            }
+        }
+
+        function editDevice(deviceId) {
+            const machine = sampleMachines.find(m => m.machine_id === deviceId);
+            if (!machine) return;
+
+            // Pre-fill the device form with existing data
+            document.getElementById('device-name').value = machine.machine_name;
+            document.getElementById('device-category').value = machine.category_id;
+            document.getElementById('device-location').value = machine.location;
+            
+            // Store the device ID for updating
+            document.getElementById('device-form').dataset.editingId = deviceId;
+            document.getElementById('device-modal').style.display = 'block';
+        }
+
+        function confirmDeleteDevice(deviceId) {
+            const machine = sampleMachines.find(m => m.machine_id === deviceId);
+            if (!machine) return;
+
+            // Create inline confirmation
+            const confirmDiv = document.createElement('div');
+            confirmDiv.className = 'alert alert-error';
+            confirmDiv.innerHTML = `
+                <strong>Confirm Deletion:</strong> Are you sure you want to delete ${machine.machine_name} (${deviceId})?
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-danger" onclick="deleteDevice('${deviceId}'); this.parentElement.parentElement.remove();">Yes, Delete</button>
+                    <button class="btn btn-primary" onclick="this.parentElement.parentElement.remove();" style="margin-left: 10px;">Cancel</button>
+                </div>
+            `;
+            
+            const container = document.querySelector('.dashboard-container');
+            container.insertBefore(confirmDiv, container.firstChild);
+        }
+
+        function deleteDevice(deviceId) {
+            // In a real implementation, this would delete from the database
+            showCustomAlert('Success', `Device ${deviceId} deleted successfully! (Demo mode)`);
+        }
+
+        function filterUsers() {
+            const statusFilter = document.getElementById('user-status-filter').value;
+            const roleFilter = document.getElementById('user-role-filter').value;
+            const userItems = document.querySelectorAll('.user-item');
+
+            userItems.forEach(item => {
+                const userStatus = item.dataset.status;
+                const userRoles = item.dataset.roles.split(',');
+                
+                const matchesStatus = !statusFilter || userStatus === statusFilter;
+                const matchesRole = !roleFilter || userRoles.includes(roleFilter);
+                
+                if (matchesStatus && matchesRole) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function editCurrentUser() {
+            editingUserId = currentUser.id;
+            document.getElementById('user-modal-title').textContent = 'Edit Profile';
+            
+            // Pre-fill form with current user data
+            document.getElementById('user-username').value = currentUser.username;
+            document.getElementById('user-first-name').value = currentUser.first_name;
+            document.getElementById('user-last-name').value = currentUser.last_name;
+            document.getElementById('user-email').value = currentUser.email;
+            document.getElementById('user-phone').value = currentUser.phone || '';
+            document.getElementById('user-date-of-birth').value = currentUser.date_of_birth || '';
+            document.getElementById('user-gender').value = currentUser.gender || '';
+            document.getElementById('user-status').value = currentUser.status;
+            document.getElementById('user-bio').value = currentUser.profile.bio || '';
+            document.getElementById('user-website').value = currentUser.profile.website || '';
+            document.getElementById('user-location').value = currentUser.profile.location || '';
+            document.getElementById('user-timezone').value = currentUser.profile.timezone || '';
+            document.getElementById('user-language').value = currentUser.profile.language || 'en';
+            
+            // Hide role selection for self-edit
+            document.getElementById('role-selection').style.display = 'none';
+            document.getElementById('status-selection').style.display = 'none';
+            
+            document.getElementById('user-modal').style.display = 'block';
+        }
+
+        function addUser() {
+            editingUserId = null;
+            document.getElementById('user-modal-title').textContent = 'Add New User';
+            document.getElementById('user-form').reset();
+            
+            // Show role and status selection for new users
+            document.getElementById('role-selection').style.display = 'block';
+            document.getElementById('status-selection').style.display = 'block';
+            
+            // Set default values
+            document.getElementById('user-status').value = 'active';
+            document.getElementById('user-gender').value = '';
+            document.getElementById('user-language').value = 'en';
+            
+            document.getElementById('user-modal').style.display = 'block';
+        }
+
+        function editUser(userId) {
+            const user = sampleUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            editingUserId = userId;
+            document.getElementById('user-modal-title').textContent = 'Edit User';
+            
+            // Pre-fill form with user data
+            document.getElementById('user-username').value = user.username;
+            document.getElementById('user-first-name').value = user.first_name;
+            document.getElementById('user-last-name').value = user.last_name;
+            document.getElementById('user-email').value = user.email;
+            document.getElementById('user-phone').value = user.phone || '';
+            document.getElementById('user-date-of-birth').value = user.date_of_birth || '';
+            document.getElementById('user-gender').value = user.gender || '';
+            document.getElementById('user-status').value = user.status;
+            document.getElementById('user-bio').value = user.profile.bio || '';
+            document.getElementById('user-website').value = user.profile.website || '';
+            document.getElementById('user-location').value = user.profile.location || '';
+            document.getElementById('user-timezone').value = user.profile.timezone || '';
+            document.getElementById('user-language').value = user.profile.language || 'en';
+            
+            // Set role checkboxes
+            const roleCheckboxes = document.querySelectorAll('input[name="user-role"]');
+            roleCheckboxes.forEach(checkbox => {
+                const roleId = parseInt(checkbox.value);
+                const hasRole = user.roles.some(r => r.role_id === roleId && r.is_active);
+                checkbox.checked = hasRole;
+            });
+            
+            // Show role and status selection for admin editing other users
+            document.getElementById('role-selection').style.display = 'block';
+            document.getElementById('status-selection').style.display = 'block';
+            
+            document.getElementById('user-modal').style.display = 'block';
+        }
+
+        function changePassword() {
+            showCustomAlert('Password Change', 'Password change functionality would be implemented with proper security measures in a production system. This includes current password verification, new password strength validation, and secure password hashing.');
+        }
+
+        function manageRoles() {
+            let rolesInfo = 'System Roles:\n\n';
+            sampleRoles.forEach(role => {
+                const userCount = sampleUsers.filter(u => 
+                    u.roles.some(r => r.role_id === role.id && r.is_active)
+                ).length;
+                rolesInfo += `${role.display_name} (${role.name}):\n`;
+                rolesInfo += `- ${role.description}\n`;
+                rolesInfo += `- Users assigned: ${userCount}\n`;
+                rolesInfo += `- Status: ${role.is_active ? 'Active' : 'Inactive'}\n\n`;
+            });
+            showCustomAlert('Role Management', rolesInfo);
+        }
+
+        function manageUserRoles(userId) {
+            const user = sampleUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            let roleInfo = `Role Management for ${user.first_name} ${user.last_name}:\n\n`;
+            roleInfo += 'Current Roles:\n';
+            user.roles.forEach(role => {
+                roleInfo += `- ${role.role_display_name} (${role.is_active ? 'Active' : 'Inactive'})\n`;
+                roleInfo += `  Assigned: ${new Date(role.assigned_at).toLocaleDateString()}\n`;
+            });
+            
+            roleInfo += '\nAvailable Roles:\n';
+            sampleRoles.forEach(role => {
+                const hasRole = user.roles.some(r => r.role_id === role.id);
+                if (!hasRole) {
+                    roleInfo += `- ${role.display_name}: ${role.description}\n`;
+                }
+            });
+
+            showCustomAlert('User Role Management', roleInfo);
+        }
+
+        function suspendUser(userId) {
+            const user = sampleUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            // Create inline confirmation
+            const confirmDiv = document.createElement('div');
+            confirmDiv.className = 'alert alert-error';
+            confirmDiv.innerHTML = `
+                <strong>Suspend User:</strong> Are you sure you want to suspend ${user.first_name} ${user.last_name}?
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-danger" onclick="confirmSuspendUser(${userId}); this.parentElement.parentElement.remove();">Yes, Suspend</button>
+                    <button class="btn btn-primary" onclick="this.parentElement.parentElement.remove();" style="margin-left: 10px;">Cancel</button>
+                </div>
+            `;
+            
+            const container = document.querySelector('.dashboard-container');
+            container.insertBefore(confirmDiv, container.firstChild);
+        }
+
+        function confirmSuspendUser(userId) {
+            const userIndex = sampleUsers.findIndex(u => u.id === userId);
+            if (userIndex !== -1) {
+                sampleUsers[userIndex].status = 'suspended';
+                updateProfileData();
+                showCustomAlert('Success', 'User suspended successfully!');
+            }
+        }
+
+        function activateUser(userId) {
+            const userIndex = sampleUsers.findIndex(u => u.id === userId);
+            if (userIndex !== -1) {
+                sampleUsers[userIndex].status = 'active';
+                updateProfileData();
+                showCustomAlert('Success', 'User activated successfully!');
+            }
+        }
+
+        async function saveUser(event) {
+            event.preventDefault();
+            
+            // Collect form data
+            const username = document.getElementById('user-username').value;
+            const firstName = document.getElementById('user-first-name').value;
+            const lastName = document.getElementById('user-last-name').value;
+            const email = document.getElementById('user-email').value;
+            const phone = document.getElementById('user-phone').value;
+            const dateOfBirth = document.getElementById('user-date-of-birth').value;
+            const gender = document.getElementById('user-gender').value;
+            const status = document.getElementById('user-status').value;
+            const bio = document.getElementById('user-bio').value;
+            const website = document.getElementById('user-website').value;
+            const location = document.getElementById('user-location').value;
+            const timezone = document.getElementById('user-timezone').value;
+            const language = document.getElementById('user-language').value;
+
+            // Collect selected roles
+            const selectedRoles = [];
+            const roleCheckboxes = document.querySelectorAll('input[name="user-role"]:checked');
+            roleCheckboxes.forEach(checkbox => {
+                const roleId = parseInt(checkbox.value);
+                const role = sampleRoles.find(r => r.id === roleId);
+                if (role) {
+                    selectedRoles.push({
+                        role_id: roleId,
+                        role_name: role.name,
+                        role_display_name: role.display_name,
+                        assigned_at: new Date().toISOString(),
+                        is_active: true
+                    });
+                }
+            });
+
+            if (editingUserId) {
+                // Update existing user
+                const userIndex = sampleUsers.findIndex(u => u.id === editingUserId);
+                if (userIndex !== -1) {
+                    // Update user data
+                    sampleUsers[userIndex] = {
+                        ...sampleUsers[userIndex],
+                        username: username,
+                        first_name: firstName,
+                        last_name: lastName,
+                        email: email,
+                        phone: phone,
+                        date_of_birth: dateOfBirth,
+                        gender: gender,
+                        status: status,
+                        updated_at: new Date().toISOString(),
+                        profile: {
+                            ...sampleUsers[userIndex].profile,
+                            bio: bio,
+                            website: website,
+                            location: location,
+                            timezone: timezone,
+                            language: language
+                        }
+                    };
+
+                    // Update roles if not editing current user
+                    if (editingUserId !== currentUser.id && selectedRoles.length > 0) {
+                        sampleUsers[userIndex].roles = selectedRoles;
+                    }
+
+                    // Update current user reference if editing self
+                    if (editingUserId === currentUser.id) {
+                        currentUser = sampleUsers[userIndex];
+                    }
+
+                    updateProfileData();
+                    closeModal('user-modal');
+                    showCustomAlert('Success', 'User updated successfully!');
+                }
+            } else {
+                // Add new user
+                if (window.dataSdk && currentData.length < 999) {
+                    const userData = {
+                        type: 'user',
+                        username: username,
+                        first_name: firstName,
+                        last_name: lastName,
+                        email: email,
+                        phone: phone,
+                        date_of_birth: dateOfBirth,
+                        gender: gender,
+                        status: status,
+                        bio: bio,
+                        website: website,
+                        location: location,
+                        timezone: timezone,
+                        language: language,
+                        roles: JSON.stringify(selectedRoles),
+                        created_at: new Date().toISOString()
+                    };
+
+                    const result = await window.dataSdk.create(userData);
+                    if (result.isOk) {
+                        // Also add to sample users for demo
+                        const newUser = {
+                            id: sampleUsers.length + 1,
+                            username: username,
+                            email: email,
+                            first_name: firstName,
+                            last_name: lastName,
+                            phone: phone,
+                            date_of_birth: dateOfBirth,
+                            gender: gender,
+                            status: status,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString(),
+                            last_login: null,
+                            roles: selectedRoles,
+                            profile: {
+                                bio: bio,
+                                avatar_url: "",
+                                website: website,
+                                location: location,
+                                timezone: timezone,
+                                language: language
+                            }
+                        };
+                        sampleUsers.push(newUser);
+                        updateProfileData();
+                        closeModal('user-modal');
+                        showCustomAlert('Success', 'User added successfully!');
+                    } else {
+                        showCustomAlert('Error', 'Failed to save user. Please try again.');
+                    }
+                } else if (currentData.length >= 999) {
+                    showCustomAlert('Error', 'Maximum limit of 999 users reached. Please delete some users first.');
+                } else {
+                    // Demo mode - add to sample users
+                    const newUser = {
+                        id: sampleUsers.length + 1,
+                        username: username,
+                        email: email,
+                        first_name: firstName,
+                        last_name: lastName,
+                        phone: phone,
+                        date_of_birth: dateOfBirth,
+                        gender: gender,
+                        status: status,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                        last_login: null,
+                        roles: selectedRoles,
+                        profile: {
+                            bio: bio,
+                            avatar_url: "",
+                            website: website,
+                            location: location,
+                            timezone: timezone,
+                            language: language
+                        }
+                    };
+                    sampleUsers.push(newUser);
+                    updateProfileData();
+                    closeModal('user-modal');
+                    showCustomAlert('Success', 'User added successfully! (Demo mode)');
+                }
+            }
+        }
+
+        function deleteUser(userId) {
+            if (confirm('Are you sure you want to delete this user?')) {
+                showCustomAlert('Success', 'User deleted successfully! (Demo mode)');
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function showCustomAlert(title, message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success';
+            alertDiv.innerHTML = `<strong>${title}:</strong> ${message}`;
+            
+            const container = document.querySelector('.dashboard-container');
+            container.insertBefore(alertDiv, container.firstChild);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99336b5937b44ebd',t:'MTc2MTI0NTQxOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

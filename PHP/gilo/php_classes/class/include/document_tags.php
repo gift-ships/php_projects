@@ -140,13 +140,9 @@ Class Icon extends Attrib implements Element{
 Class Span extends Attrib implements Element{
 	private $id ;
 	private $Elements = array();
-	private $Class;
-	public function __construct($class,$text){
-		$this->Class = $class;
+	public function __construct($text){
 		$this->Text = $text;
-		if (strlen($this->Class)> 0){
-			$this->AddAttrib("class",$this->Class);
-		}
+		
 	}
 	public function AddElement($element):void {
 		array_push($this->Elements,(object) $element);
@@ -214,14 +210,11 @@ Class TableRow extends Attrib implements Element{
 Class Button extends Attrib implements Element{
 	private $id ;
 	private $Elements = array();
-	private $Span ;
-	private $Class;
-//	private $Icon ;
-	public function __construct($class,$text){
+	
+
+	public function __construct($text){
 		$this->Text = $text;
-		$this->Class = $class;	
-		$this->AddAttrib("class",$this->Class);
-		$this->AddAttrib("type","button");
+		
 		}
 	public function AddElement($element):void {
 		array_push($this->Elements,(object) $element);
@@ -238,10 +231,9 @@ Class Button extends Attrib implements Element{
 				$element->render();
 			}
 		}
-	    if (isset($this->Text)){
-			$Span = new Span ("css-button-text","");
-			$Span->AddElement(new Span("",$this->Text));
-			$Span->render();
+	   if (isset($this->Text)){
+				echo $this->Text ;
+			
 		}
 		echo "</button>";
 	}
@@ -443,7 +435,7 @@ Class HtmlBody extends Attrib implements Element {
 
 	}
     public function render():void {
-	   echo "<body>";
+	   echo "<body ",$this->renderAttrib(),">";
 		if (isset($this->Elements)){
 			foreach($this->Elements as $element){
 				$element->render();
@@ -517,7 +509,7 @@ Class SVectorG extends Attrib implements Element{
 		echo "</svg>";
 	}	
 }
-Class Script implements Element{
+Class Script extends Attrib implements Element{
 	private $Elements = array();
 	private String $Script;
 	public function __construct($script){
@@ -551,7 +543,7 @@ Class DocHead extends Attrib implements Element{
 				$element->render();
 			}
 		}
-		include "class\scripts\headscript.php";
+		//include "class\scripts\headscript.php";
 		echo "</head>";
 	}
 	public function __construct(){
@@ -563,7 +555,7 @@ Class DocHead extends Attrib implements Element{
 	}		
 }
 
-Class Style implements  Element {
+Class Style extends Attrib implements Element{
 	private String $Style;
 	private $Elements = array();
 	public function __construct($style){
@@ -576,14 +568,140 @@ Class Style implements  Element {
 		 array_push($this->Elements,(object) $element);
 	}
 	public function render():void {
-		if (isset($this->Style)){
-			echo "<style>";
+		
+			echo "<style ",$this->renderAttrib(),">";
 			foreach($this->Elements as $element){
 				$element->render();
 			}
-		echo $this->Style ."</style>";}
+		echo $this->Style ."</style>";
 	}
 }
-
+Class H1 extends Attrib implements Element{
+	private String $Header;
+	private $Elements = array();
+	public function __construct($header){
+		
+		$this->Header = $header; 
+		
+	}
+	public function AddElement($element):void {
+		//throw new ErrorException("AddElement function  not allowed for Object 'Style'", 0, 1, "documents_tags.php", 1 );
+		 array_push($this->Elements,(object) $element);
+	}
+	public function render():void {
+		if (isset($this->Header)){
+			echo "<h1 ",$this->renderAttrib(),">";
+			foreach($this->Elements as $element){
+				$element->render();
+			}
+		echo $this->Header ."</h1>";}
+	}
+}
+Class H2 extends Attrib implements Element{
+	private String $Header;
+	private $Elements = array();
+	public function __construct($header){
+		
+		$this->Header = $header; 
+		
+	}
+	public function AddElement($element):void {
+		//throw new ErrorException("AddElement function  not allowed for Object 'Style'", 0, 1, "documents_tags.php", 1 );
+		 array_push($this->Elements,(object) $element);
+	}
+	public function render():void {
+		if (isset($this->Header)){
+			echo "<h2 ",$this->renderAttrib(),">";
+			foreach($this->Elements as $element){
+				$element->render();
+			}
+		echo $this->Header ."</h2>";}
+	}
+}
+Class H3 extends Attrib implements Element{
+	private String $Header;
+	private $Elements = array();
+	public function __construct($header){
+		
+		$this->Header = $header; 
+		
+	}
+	public function AddElement($element):void {
+		//throw new ErrorException("AddElement function  not allowed for Object 'Style'", 0, 1, "documents_tags.php", 1 );
+		 array_push($this->Elements,(object) $element);
+	}
+	public function render():void {
+		if (isset($this->Header)){
+			echo "<h3 ",$this->renderAttrib(),">";
+			foreach($this->Elements as $element){
+				$element->render();
+			}
+		echo $this->Header ."</h3>";}
+	}
+}
+Class UL extends Attrib implements Element{
+	
+	private $Elements = array();
+	public function __construct(){
+		
+		
+		
+	}
+	public function AddElement($element):void {
+		//throw new ErrorException("AddElement function  not allowed for Object 'Style'", 0, 1, "documents_tags.php", 1 );
+		 array_push($this->Elements,(object) $element);
+	}
+	public function render():void {
+		echo "<ul ",$this->renderAttrib(),">";
+			foreach($this->Elements as $element){
+				$element->render();
+			}
+		echo "</ul>";
+	}
+}
+Class Aside extends Attrib implements Element{
+	
+	private $Elements = array();
+	public function __construct(){
+		
+		
+		
+	}
+	public function AddElement($element):void {
+		//throw new ErrorException("AddElement function  not allowed for Object 'Style'", 0, 1, "documents_tags.php", 1 );
+		 array_push($this->Elements,(object) $element);
+	}
+	public function render():void {
+		echo "<aside ",$this->renderAttrib(),">";
+			foreach($this->Elements as $element){
+				$element->render();
+			}
+		echo "</aside>";
+	}
+}
+Class LI extends Attrib implements Element{
+	private String $Text; 
+	private $Elements = array();
+	public function __construct(){
+		if (func_num_args() > 0)
+		{
+		$this->Text = func_get_arg(0);
+		}
+	}
+	public function AddElement($element):void {
+		//throw new ErrorException("AddElement function  not allowed for Object 'Style'", 0, 1, "documents_tags.php", 1 );
+		 array_push($this->Elements,(object) $element);
+	}
+	public function render():void {
+		echo "<li ",$this->renderAttrib(),">";
+			foreach($this->Elements as $element){
+				$element->render();
+			}
+			if (isset($this->Text)) {
+				echo $this->Text;
+			}
+		echo "</li>";
+	}
+}
 ?>
 
