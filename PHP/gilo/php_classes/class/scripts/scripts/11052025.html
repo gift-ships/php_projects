@@ -1,0 +1,2647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IIoT Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-primary: #3b82f6;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-danger: #ef4444;
+            --color-bg: #ffffff;
+            --color-surface: #f9fafb;
+            --color-border: #e5e7eb;
+            --color-text: #111827;
+            --color-text-secondary: #6b7280;
+        }
+
+        [data-theme="dark"] {
+            --color-bg: #111827;
+            --color-surface: #1f2937;
+            --color-border: #374151;
+            --color-text: #f9fafb;
+            --color-text-secondary: #9ca3af;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: var(--color-surface);
+            border-right: 1px solid var(--color-border);
+            padding: 1.5rem;
+            transition: background 0.3s;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-item a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .nav-item a:hover,
+        .nav-item a.active {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toggle-switch-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--color-primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .category-section {
+            margin-bottom: 2rem;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .category-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .category-icon svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .machine-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .machine-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .machine-card:hover {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .machine-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .connection-status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .connection-status-dot.online {
+            background: var(--color-success);
+        }
+
+        .connection-status-dot.offline {
+            background: var(--color-text-secondary);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-badge.normal {
+            background: #10b98120;
+            color: var(--color-success);
+        }
+
+        .status-badge.warning {
+            background: #f59e0b20;
+            color: var(--color-warning);
+        }
+
+        .status-badge.critical,
+        .status-badge.error {
+            background: #ef444420;
+            color: var(--color-danger);
+        }
+
+        .machine-icon-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+        }
+
+        .machine-icon-container svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .card-actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: var(--color-surface);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-border);
+        }
+
+        .btn-danger {
+            background: var(--color-danger);
+            color: white;
+        }
+
+        .monitoring-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .sensor-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .sensor-card:hover {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .sensor-label {
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .sensor-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .threshold-bar {
+            height: 8px;
+            background: var(--color-border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .threshold-fill {
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        .threshold-fill.normal {
+            background: var(--color-success);
+        }
+
+        .threshold-fill.warning {
+            background: var(--color-warning);
+        }
+
+        .threshold-fill.critical {
+            background: var(--color-danger);
+        }
+
+        .live-monitor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .connection-status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+        }
+
+        .connection-status-badge.online {
+            background: #10b98120;
+            color: var(--color-success);
+        }
+
+        .connection-status-badge.offline {
+            background: #6b728020;
+            color: var(--color-text-secondary);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--color-surface);
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 700px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-close-btn {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--color-text-secondary);
+        }
+
+        .modal-body {
+            margin-top: 1rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .chart-container {
+            margin-top: 1rem;
+            background: var(--color-bg);
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+
+        .chart-container svg {
+            width: 100%;
+            height: auto;
+        }
+
+        .grid-line {
+            stroke: var(--color-border);
+            stroke-width: 1;
+        }
+
+        .axis-label {
+            fill: var(--color-text-secondary);
+            font-size: 10px;
+        }
+
+        .area {
+            fill: var(--color-primary);
+            opacity: 0.2;
+        }
+
+        .line {
+            fill: none;
+            stroke: var(--color-primary);
+            stroke-width: 2;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            background: var(--color-surface);
+            border-radius: 0.75rem;
+            border: 1px solid var(--color-border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        th {
+            background: var(--color-bg);
+            font-weight: 600;
+        }
+
+        .form-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 0.75rem;
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--color-border);
+            border-radius: 0.5rem;
+            background: var(--color-bg);
+            color: var(--color-text);
+            font-size: 1rem;
+        }
+
+        .history-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .settings-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .tab-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: var(--color-surface);
+            color: var(--color-text);
+            cursor: pointer;
+            border-radius: 0.5rem;
+            font-weight: 500;
+        }
+
+        .tab-btn.active {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .print-hide {
+            display: block;
+        }
+
+        @media print {
+            .print-hide {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body data-theme="dark">
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar"></aside>
+        <div class="main-content">
+            <header class="header" id="header"></header>
+            <div class="content" id="content"></div>
+        </div>
+    </div>
+
+    <script>
+        // Constants
+        const HEARTBEAT_TIMEOUT = 15000;
+
+        // State
+        let state = {
+            view: 'Dashboard',
+            theme: 'dark',
+            selectedMachine: null,
+            selectedSensor: null,
+            diagnosis: null,
+            deviceTab: 'list',
+            liveMonitoringInterval: null,
+            kafkaMessages: [
+                { id: 1, message_id: 'msg-swh001-001', machine_id: 'SWH001', kafka_topic: 'machine-readings', kafka_partition: 0, kafka_offset: 12345, message_timestamp: '2024-11-05 10:00:00', message_hash: 'abc123def456', processed_at: '2024-11-05 10:00:01', processing_status: 'processed', reading_id: 1, error_message: null },
+                { id: 2, message_id: 'msg-swh001-002', machine_id: 'SWH001', kafka_topic: 'machine-readings', kafka_partition: 0, kafka_offset: 12346, message_timestamp: '2024-11-05 10:05:00', message_hash: 'def456ghi789', processed_at: '2024-11-05 10:05:01', processing_status: 'processed', reading_id: 2, error_message: null },
+                { id: 3, message_id: 'msg-swh001-003', machine_id: 'SWH001', kafka_topic: 'machine-readings', kafka_partition: 0, kafka_offset: 12347, message_timestamp: '2024-11-05 10:10:00', message_hash: 'ghi789jkl012', processed_at: '2024-11-05 10:10:02', processing_status: 'failed', reading_id: null, error_message: 'Invalid data format' },
+                { id: 4, message_id: 'msg-swh001-004', machine_id: 'SWH001', kafka_topic: 'machine-readings', kafka_partition: 0, kafka_offset: 12348, message_timestamp: '2024-11-05 10:15:00', message_hash: 'abc123def456', processed_at: '2024-11-05 10:15:01', processing_status: 'skipped', reading_id: null, error_message: 'Duplicate message detected' },
+            ],
+            users: [
+                { id: 1, name: 'Admin User', email: 'admin@example.com', role: 'admin', status: 'active' },
+                { id: 2, name: 'Regular User', email: 'user@example.com', role: 'user', status: 'active' },
+            ],
+            currentUser: { id: 1, name: 'Admin User', email: 'admin@example.com', role: 'admin', status: 'active' },
+            categories: [
+                { id: 1, category_name: 'Solar Water Heaters', category_code: 'SWH', description: 'AI-controlled solar water heating systems.', icon: 'M12 3.5c-1.2 0-2.3.4-3.2 1.1L12 8l3.2-3.4c-.9-.7-2-1.1-3.2-1.1z M12 20.5c1.2 0 2.3-.4 3.2-1.1L12 16l-3.2 3.4c.9.7 2 1.1 3.2 1.1z M5.1 6.3C4.4 7.2 4 8.3 4 9.5s.4 2.3 1.1 3.2l3.4-3.2L5.1 6.3zm13.8 0l-3.4 3.2 3.4 3.2c.7-.9 1.1-2 1.1-3.2s-.4-2.3-1.1-3.2z M12 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z', color: '#f59e0b' },
+            ],
+            machines: [
+                { id: 1, machine_id: 'SWH001', name: 'Main Heater Unit', category_id: 1, location: 'Rooftop Sector 1', status: 'normal', lastHeartbeat: Date.now(), model: 'SWH-2000', manufacturer: 'SolarTech', serial_number: 'SN-2024-001', installed_at: '2024-01-15' },
+            ],
+            valueCategories: [
+                { id: 1, value_name: 'Collector Temperature', value_code: 'collector_temp', unit: '°C', data_type: 'decimal' },
+                { id: 2, value_name: 'Tank Temperature', value_code: 'tank_temp', unit: '°C', data_type: 'decimal' },
+                { id: 3, value_name: 'Pump State', value_code: 'pump_state', unit: '', data_type: 'boolean' },
+                { id: 4, value_name: 'Pump Speed', value_code: 'pump_speed', unit: '%', data_type: 'integer' },
+                { id: 5, value_name: 'Flow Rate', value_code: 'flow_rate', unit: 'L/min', data_type: 'decimal' },
+            ],
+            thresholds: [
+                { id: 1, value_category_id: 1, min_value: 0, max_value: 150, warning_min: 10, warning_max: 120, critical_min: 5, critical_max: 135, warning_error_id: 1, critical_error_id: 2 },
+                { id: 2, value_category_id: 2, min_value: 0, max_value: 100, warning_min: 15, warning_max: 85, critical_min: 10, critical_max: 95, warning_error_id: 3, critical_error_id: 4 },
+                { id: 3, value_category_id: 5, min_value: 0, max_value: 20, warning_min: 2, warning_max: 18, critical_min: 1, critical_max: 19, warning_error_id: 5, critical_error_id: 6 },
+            ],
+            errorTypes: [
+                { id: 1, error_code: 'WARN_COLL_TEMP', error_name: 'Collector Temp Warning', severity: 'warning', description: 'Temperature approaching warning threshold', recommended_action: 'Monitor temperature and check cooling system' },
+                { id: 2, error_code: 'CRIT_COLL_TEMP', error_name: 'Collector Overheating', severity: 'critical', description: 'Critical temperature exceeded', recommended_action: 'Shut down immediately and inspect cooling system' },
+                { id: 3, error_code: 'WARN_TANK_TEMP', error_name: 'Tank Temp Warning', severity: 'warning', description: 'Tank temperature warning', recommended_action: 'Check thermostat settings' },
+                { id: 4, error_code: 'CRIT_TANK_TEMP', error_name: 'Tank Overheating', severity: 'critical', description: 'Tank critical temperature', recommended_action: 'Emergency shutdown required' },
+                { id: 5, error_code: 'WARN_FLOW_RATE', error_name: 'Low Flow Rate', severity: 'warning', description: 'Flow rate below optimal', recommended_action: 'Check for blockages' },
+                { id: 6, error_code: 'CRIT_FLOW_RATE', error_name: 'No Flow Detected', severity: 'critical', description: 'Critical flow failure', recommended_action: 'Inspect pump and valves immediately' },
+            ],
+            errors: [],
+            readings: [],
+        };
+
+        // Helper Functions
+        function getHealthStatus(value, threshold) {
+            if (!threshold) return 'normal';
+            if ((threshold.critical_min !== null && value < threshold.critical_min) || 
+                (threshold.critical_max !== null && value > threshold.critical_max)) {
+                return 'critical';
+            }
+            if ((threshold.warning_min !== null && value < threshold.warning_min) || 
+                (threshold.warning_max !== null && value > threshold.warning_max)) {
+                return 'warning';
+            }
+            return 'normal';
+        }
+
+        function getConnectionStatus(machine) {
+            if (!machine.lastHeartbeat) return 'offline';
+            if (Date.now() - machine.lastHeartbeat > HEARTBEAT_TIMEOUT) {
+                return 'offline';
+            }
+            return 'online';
+        }
+
+        function generateInitialReadings() {
+            const readings = [];
+            const now = new Date();
+            for(let i = 200; i >= 0; i--) {
+                const timestamp = new Date(now.getTime() - i * 60000).toISOString();
+                readings.push({
+                    id: 200 - i,
+                    machine_id: 'SWH001',
+                    timestamp: timestamp,
+                    values: [
+                        { value_category_id: 1, value: 75 + Math.sin(i / 20) * 10 + Math.random() * 5 },
+                        { value_category_id: 2, value: 55 + Math.sin(i / 30) * 5 + Math.random() * 3 },
+                        { value_category_id: 3, value: true },
+                        { value_category_id: 4, value: 85 },
+                        { value_category_id: 5, value: 5.5 + Math.random() * 0.5 },
+                    ]
+                });
+            }
+            return readings;
+        }
+
+        // Initialize readings
+        state.readings = generateInitialReadings();
+        state.selectedMachine = state.machines[0];
+
+        // Render Functions
+        function renderSidebar() {
+            const navItems = ['Dashboard', 'Live Monitoring', 'Reports', 'Device Management', 'Settings'];
+            const navIcons = {
+                Dashboard: "M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z",
+                "Live Monitoring": "M16 18h2V6h-2v12zm-4 4h2V2h-2v20zm-4 0h2V12H8v10zm8 0h2V10h-2v12z",
+                Reports: "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z",
+                "Device Management": "M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z",
+                Settings: "M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"
+            };
+
+            const html = `
+                <div class="sidebar-header">
+                    <span class="icon">⚙️</span>
+                    <h1>IoT Control</h1>
+                </div>
+                <ul class="nav-menu">
+                    ${navItems.map(item => `
+                        <li class="nav-item">
+                            <a href="#" class="${state.view === item ? 'active' : ''}" data-view="${item}">
+                                <svg class="nav-icon" viewBox="0 0 24 24"><path d="${navIcons[item]}" /></svg>
+                                <span>${item}</span>
+                            </a>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+            document.getElementById('sidebar').innerHTML = html;
+
+            // Add event listeners
+            document.querySelectorAll('[data-view]').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    state.view = link.dataset.view;
+                    render();
+                });
+            });
+        }
+
+        function renderHeader() {
+            const html = `
+                <h2>${state.view}</h2>
+                <div class="toggle-switch-container">
+                    <span>Light</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" ${state.theme === 'dark' ? 'checked' : ''} id="theme-toggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span>Dark</span>
+                </div>
+            `;
+            document.getElementById('header').innerHTML = html;
+
+            // Add event listener
+            document.getElementById('theme-toggle').addEventListener('change', (e) => {
+                state.theme = e.target.checked ? 'dark' : 'light';
+                document.body.setAttribute('data-theme', state.theme);
+            });
+        }
+
+        function renderDashboard() {
+            const groupedMachines = {};
+            state.categories.forEach(cat => {
+                groupedMachines[cat.id] = { ...cat, machines: [] };
+            });
+            state.machines.forEach(machine => {
+                if (groupedMachines[machine.category_id]) {
+                    groupedMachines[machine.category_id].machines.push(machine);
+                }
+            });
+
+            const groups = Object.values(groupedMachines).filter(g => g.machines.length > 0);
+
+            const html = groups.map(group => `
+                <section class="category-section">
+                    <div class="category-header">
+                        <div class="category-icon" style="background-color: ${group.color}20">
+                            <svg viewBox="0 0 24 24" fill="${group.color}"><path d="${group.icon}"></path></svg>
+                        </div>
+                        <h3>${group.category_name} (${group.machines.length})</h3>
+                    </div>
+                    <div class="machine-grid">
+                        ${group.machines.map(machine => {
+                            const connectionStatus = getConnectionStatus(machine);
+                            return `
+                                <div class="machine-card">
+                                    <div class="machine-card-header">
+                                        <h4>${machine.name}</h4>
+                                        <div class="connection-status-dot ${connectionStatus}" title="${connectionStatus}"></div>
+                                    </div>
+                                    <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin-bottom: 1rem">${machine.machine_id}</p>
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div class="status-badge ${machine.status}">${machine.status}</div>
+                                        <div class="machine-icon-container">
+                                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="${group.icon}"></path>
+                                            </svg>
+                                            <span>${group.category_name}</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-actions">
+                                        <button class="btn btn-primary" onclick="monitorMachine('${machine.machine_id}')">Monitor Details</button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </section>
+            `).join('');
+
+            document.getElementById('content').innerHTML = html;
+        }
+
+        function renderLiveMonitoring() {
+            if (!state.selectedMachine) {
+                document.getElementById('content').innerHTML = '<div>Please select a machine from the dashboard to monitor.</div>';
+                return;
+            }
+
+            const latestReading = [...state.readings].reverse().find(r => r.machine_id === state.selectedMachine.machine_id);
+            const machineValueCategories = state.valueCategories.filter(vc => 
+                latestReading?.values.some(v => v.value_category_id === vc.id)
+            );
+            const connectionStatus = getConnectionStatus(state.selectedMachine);
+
+            const html = `
+                <div class="live-monitor-header">
+                    <h2>${state.selectedMachine.name} (${state.selectedMachine.machine_id})</h2>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span style="font-size: 0.875rem; color: var(--color-text-secondary);">Auto-refresh: <strong>5s</strong></span>
+                        <div class="connection-status-badge ${connectionStatus}">
+                            ${connectionStatus}
+                        </div>
+                    </div>
+                </div>
+                <div class="monitoring-grid">
+                    ${machineValueCategories.map(vc => {
+                        const sensorValue = latestReading?.values.find(v => v.value_category_id === vc.id);
+                        if (!sensorValue) return '';
+
+                        const effectiveThreshold = state.thresholds.find(t => 
+                            t.machine_id === state.selectedMachine.machine_id && t.value_category_id === vc.id
+                        ) || state.thresholds.find(t => t.value_category_id === vc.id && !t.machine_id);
+                        
+                        const isNumeric = typeof sensorValue.value === 'number';
+                        const healthStatus = isNumeric ? getHealthStatus(sensorValue.value, effectiveThreshold) : 'normal';
+
+                        let displayValue = sensorValue.value;
+                        if (typeof displayValue === 'boolean') displayValue = displayValue ? 'ON' : 'OFF';
+
+                        let percentage = 0;
+                        if (isNumeric && effectiveThreshold && effectiveThreshold.min_value !== null && effectiveThreshold.max_value !== null) {
+                            percentage = ((sensorValue.value - effectiveThreshold.min_value) / (effectiveThreshold.max_value - effectiveThreshold.min_value)) * 100;
+                            percentage = Math.max(0, Math.min(100, percentage));
+                        }
+
+                        return `
+                            <div class="sensor-card" onclick="showSensorHistory(${vc.id})">
+                                <div class="sensor-label">${vc.value_name}</div>
+                                <div class="sensor-value">${displayValue} ${vc.unit}</div>
+                                ${isNumeric && effectiveThreshold ? `
+                                    <div class="threshold-bar">
+                                        <div class="threshold-fill ${healthStatus}" style="width: ${percentage}%"></div>
+                                    </div>
+                                ` : ''}
+                                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                                    <button class="btn btn-secondary" style="flex: 1;" onclick="event.stopPropagation(); showSensorHistory(${vc.id})">
+                                        View History
+                                    </button>
+                                    <button class="btn btn-secondary" style="flex: 1;" onclick="event.stopPropagation(); diagnoseSensor('${vc.value_name}', '${sensorValue.value}', '${vc.unit}', ${vc.id})">
+                                        AI Diagnose
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+
+            document.getElementById('content').innerHTML = html;
+
+            // Start live data refresh if not already started
+            if (!state.liveMonitoringInterval) {
+                startLiveMonitoring();
+            }
+        }
+
+        // API Functions
+        async function fetchLatestReadings(machineId) {
+            try {
+                // In production, replace with actual API endpoint
+                const response = await fetch(`/api/readings/latest/${machineId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch readings');
+                }
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching readings:', error);
+                // Return null to use simulated data as fallback
+                return null;
+            }
+        }
+
+        function startLiveMonitoring() {
+            // Clear any existing interval
+            if (state.liveMonitoringInterval) {
+                clearInterval(state.liveMonitoringInterval);
+            }
+
+            // Set up new interval for live updates
+            state.liveMonitoringInterval = setInterval(async () => {
+                if (state.view !== 'Live Monitoring' || !state.selectedMachine) {
+                    stopLiveMonitoring();
+                    return;
+                }
+
+                // Try to fetch from API
+                const apiData = await fetchLatestReadings(state.selectedMachine.machine_id);
+                
+                if (apiData) {
+                    // Use API data if available
+                    // Expected format: { machine_id, timestamp, values: [{value_category_id, value}] }
+                    const newReading = {
+                        id: state.readings.length + 1,
+                        machine_id: apiData.machine_id,
+                        timestamp: apiData.timestamp,
+                        values: apiData.values
+                    };
+                    state.readings.push(newReading);
+                    
+                    // Update machine heartbeat
+                    const machine = state.machines.find(m => m.machine_id === apiData.machine_id);
+                    if (machine) {
+                        machine.lastHeartbeat = Date.now();
+                    }
+                } else {
+                    // Fallback to simulated data
+                    simulateReadingUpdate();
+                }
+
+                // Re-render the view to show new data
+                renderLiveMonitoring();
+            }, 5000); // Update every 5 seconds
+        }
+
+        function stopLiveMonitoring() {
+            if (state.liveMonitoringInterval) {
+                clearInterval(state.liveMonitoringInterval);
+                state.liveMonitoringInterval = null;
+            }
+        }
+
+        function simulateReadingUpdate() {
+            const machineToUpdate = state.selectedMachine;
+            if (!machineToUpdate) return;
+
+            const lastReading = [...state.readings].reverse().find(r => r.machine_id === machineToUpdate.machine_id);
+            if (!lastReading) return;
+
+            const newValues = lastReading.values.map(v => {
+                let newValue = v.value;
+                if (typeof v.value === 'number') {
+                    const vc = state.valueCategories.find(cat => cat.id === v.value_category_id);
+                    const variance = vc?.value_code.includes('temp') ? 1 : 0.2;
+                    newValue = v.value + (Math.random() - 0.5) * variance;
+                } else if (typeof v.value === 'boolean') {
+                    newValue = Math.random() > 0.1 ? v.value : !v.value;
+                }
+                return { value_category_id: v.value_category_id, value: newValue };
+            });
+
+            state.readings.push({
+                id: state.readings.length + 1,
+                machine_id: machineToUpdate.machine_id,
+                timestamp: new Date().toISOString(),
+                values: newValues
+            });
+
+            machineToUpdate.lastHeartbeat = Date.now();
+        }
+
+        function renderReports() {
+            const html = `
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;" class="print-hide">
+                    <button onclick="window.print()" class="btn btn-primary">Print Report</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Machine</th>
+                                <th>Error</th>
+                                <th>Severity</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${state.errors.map(err => {
+                                const machine = state.machines.find(m => m.machine_id === err.machine_id);
+                                const errorType = state.errorTypes.find(et => et.id === err.error_type_id);
+                                if (!machine || !errorType) return '';
+                                return `
+                                    <tr>
+                                        <td>${new Date(err.error_timestamp).toLocaleString()}</td>
+                                        <td>${machine.name}</td>
+                                        <td>${errorType.error_name} (${errorType.error_code})</td>
+                                        <td><span class="status-badge ${errorType.severity}">${errorType.severity}</span></td>
+                                        <td>${err.status}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            document.getElementById('content').innerHTML = html;
+        }
+
+        function renderDeviceManagement() {
+            const html = `
+                <div class="settings-tabs" style="margin-bottom: 2rem;">
+                    <button class="tab-btn ${state.deviceTab === 'list' ? 'active' : ''}" onclick="setDeviceTab('list')">Machine List</button>
+                    <button class="tab-btn ${state.deviceTab === 'add' ? 'active' : ''}" onclick="setDeviceTab('add')">Add Machine</button>
+                    <button class="tab-btn ${state.deviceTab === 'categories' ? 'active' : ''}" onclick="setDeviceTab('categories')">Machine Categories</button>
+                    <button class="tab-btn ${state.deviceTab === 'sensors' ? 'active' : ''}" onclick="setDeviceTab('sensors')">Sensor Types</button>
+                    <button class="tab-btn ${state.deviceTab === 'thresholds' ? 'active' : ''}" onclick="setDeviceTab('thresholds')">Thresholds</button>
+                    <button class="tab-btn ${state.deviceTab === 'errors' ? 'active' : ''}" onclick="setDeviceTab('errors')">Error Types</button>
+                    <button class="tab-btn ${state.deviceTab === 'error-mapping' ? 'active' : ''}" onclick="setDeviceTab('error-mapping')">Threshold Errors</button>
+                    <button class="tab-btn ${state.deviceTab === 'kafka' ? 'active' : ''}" onclick="setDeviceTab('kafka')">Kafka Messages</button>
+                </div>
+                <div id="device-tab-content"></div>
+            `;
+            document.getElementById('content').innerHTML = html;
+            renderDeviceTabContent();
+        }
+
+        function renderDeviceTabContent() {
+            const container = document.getElementById('device-tab-content');
+            if (!container) return;
+
+            switch(state.deviceTab) {
+                case 'list':
+                    container.innerHTML = `
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Machine ID</th>
+                                        <th>Name</th>
+                                        <th>Category</th>
+                                        <th>Location</th>
+                                        <th>Model</th>
+                                        <th>Manufacturer</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${state.machines.map(m => {
+                                        const category = state.categories.find(c => c.id === m.category_id);
+                                        return `
+                                            <tr>
+                                                <td>${m.machine_id}</td>
+                                                <td>${m.name}</td>
+                                                <td>${category?.category_name || ''}</td>
+                                                <td>${m.location || '-'}</td>
+                                                <td>${m.model || '-'}</td>
+                                                <td>${m.manufacturer || '-'}</td>
+                                                <td><span class="status-badge ${m.status}">${m.status}</span></td>
+                                                <td>
+                                                    <button class="btn btn-secondary" onclick="editMachine('${m.machine_id}')">Edit</button>
+                                                    <button class="btn btn-secondary" onclick="configureMachine('${m.machine_id}')">Configure</button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    break;
+
+                case 'add':
+                    container.innerHTML = `
+                        <div class="form-section">
+                            <h3>Add New Machine</h3>
+                            <form id="add-machine-form">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                    <div class="form-group">
+                                        <label>Machine ID *</label>
+                                        <input type="text" id="new-machine-id" class="form-input" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Machine Name *</label>
+                                        <input type="text" id="new-machine-name" class="form-input" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Category *</label>
+                                        <select id="new-machine-category" class="form-input" required>
+                                            ${state.categories.map(cat => `<option value="${cat.id}">${cat.category_name}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Location</label>
+                                        <input type="text" id="new-machine-location" class="form-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Model</label>
+                                        <input type="text" id="new-machine-model" class="form-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Manufacturer</label>
+                                        <input type="text" id="new-machine-manufacturer" class="form-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Serial Number</label>
+                                        <input type="text" id="new-machine-serial" class="form-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Installation Date</label>
+                                        <input type="date" id="new-machine-install-date" class="form-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Status</label>
+                                        <select id="new-machine-status" class="form-input">
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                            <option value="maintenance">Maintenance</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Add Machine</button>
+                            </form>
+                        </div>
+                    `;
+                    
+                    document.getElementById('add-machine-form').addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        const newMachine = {
+                            id: state.machines.length + 1,
+                            machine_id: document.getElementById('new-machine-id').value,
+                            name: document.getElementById('new-machine-name').value,
+                            category_id: parseInt(document.getElementById('new-machine-category').value),
+                            location: document.getElementById('new-machine-location').value,
+                            model: document.getElementById('new-machine-model').value,
+                            manufacturer: document.getElementById('new-machine-manufacturer').value,
+                            serial_number: document.getElementById('new-machine-serial').value,
+                            installed_at: document.getElementById('new-machine-install-date').value,
+                            status: document.getElementById('new-machine-status').value,
+                            lastHeartbeat: Date.now()
+                        };
+                        state.machines.push(newMachine);
+                        alert('Machine added successfully!');
+                        state.deviceTab = 'list';
+                        renderDeviceManagement();
+                    });
+                    break;
+
+                case 'categories':
+                    container.innerHTML = `
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Icon</th>
+                                        <th>Category Name</th>
+                                        <th>Code</th>
+                                        <th>Description</th>
+                                        <th>Color</th>
+                                        <th>Active</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${state.categories.map(cat => `
+                                        <tr>
+                                            <td>
+                                                <div style="width: 32px; height: 32px; background: ${cat.color}20; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                                    <svg viewBox="0 0 24 24" fill="${cat.color}" style="width: 20px; height: 20px;">
+                                                        <path d="${cat.icon}"></path>
+                                                    </svg>
+                                                </div>
+                                            </td>
+                                            <td>${cat.category_name}</td>
+                                            <td>${cat.category_code}</td>
+                                            <td>${cat.description || '-'}</td>
+                                            <td><span style="display: inline-block; width: 40px; height: 20px; background: ${cat.color}; border-radius: 4px;"></span></td>
+                                            <td><span class="status-badge ${cat.is_active !== false ? 'normal' : 'warning'}">${cat.is_active !== false ? 'Active' : 'Inactive'}</span></td>
+                                            <td>
+                                                <button class="btn btn-secondary" onclick="editCategory(${cat.id})">Edit</button>
+                                                <button class="btn btn-secondary" onclick="toggleCategoryActive(${cat.id})">${cat.is_active !== false ? 'Deactivate' : 'Activate'}</button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        <button class="btn btn-primary" style="margin-top: 1rem;" onclick="addCategory()">Add Machine Category</button>
+                    `;
+                    break;
+
+                case 'sensors':
+                    container.innerHTML = `
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Value Name</th>
+                                        <th>Code</th>
+                                        <th>Unit</th>
+                                        <th>Data Type</th>
+                                        <th>Description</th>
+                                        <th>Active</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${state.valueCategories.map(vc => `
+                                        <tr>
+                                            <td>${vc.value_name}</td>
+                                            <td>${vc.value_code}</td>
+                                            <td>${vc.unit || '-'}</td>
+                                            <td>${vc.data_type}</td>
+                                            <td>${vc.description || '-'}</td>
+                                            <td><span class="status-badge ${vc.is_active !== false ? 'normal' : 'warning'}">${vc.is_active !== false ? 'Active' : 'Inactive'}</span></td>
+                                            <td>
+                                                <button class="btn btn-secondary" onclick="editSensor(${vc.id})">Edit</button>
+                                                <button class="btn btn-secondary" onclick="toggleSensorActive(${vc.id})">${vc.is_active !== false ? 'Deactivate' : 'Activate'}</button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        <button class="btn btn-primary" style="margin-top: 1rem;" onclick="addSensor()">Add Sensor Type</button>
+                    `;
+                    break;
+
+                case 'thresholds':
+                    container.innerHTML = `
+                        <div class="form-section" style="margin-bottom: 2rem;">
+                            <h3>Manage Thresholds</h3>
+                            <div class="form-group">
+                                <label>Select Machine</label>
+                                <select id="threshold-machine" class="form-input" onchange="loadThresholds()">
+                                    <option value="">-- Global Thresholds --</option>
+                                    ${state.machines.map(m => `<option value="${m.machine_id}">${m.name} (${m.machine_id})</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        <div id="thresholds-list"></div>
+                    `;
+                    loadThresholds();
+                    break;
+
+                case 'errors':
+                    container.innerHTML = `
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Error Code</th>
+                                        <th>Error Name</th>
+                                        <th>Severity</th>
+                                        <th>Description</th>
+                                        <th>Recommended Action</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${state.errorTypes.map(et => `
+                                        <tr>
+                                            <td>${et.error_code}</td>
+                                            <td>${et.error_name}</td>
+                                            <td><span class="status-badge ${et.severity}">${et.severity}</span></td>
+                                            <td>${et.description || '-'}</td>
+                                            <td>${et.recommended_action || '-'}</td>
+                                            <td>
+                                                <button class="btn btn-secondary" onclick="editErrorType(${et.id})">Edit</button>
+                                                <button class="btn btn-secondary" onclick="deleteErrorType(${et.id})">Delete</button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        <button class="btn btn-primary" style="margin-top: 1rem;" onclick="addErrorType()">Add Error Type</button>
+                    `;
+                    break;
+
+                case 'error-mapping':
+                    container.innerHTML = `
+                        <div class="form-section" style="margin-bottom: 2rem;">
+                            <h3>Map Threshold Violations to Errors</h3>
+                            <p style="color: var(--color-text-secondary); margin-bottom: 1rem;">
+                                Configure which errors are triggered when sensor thresholds are violated.
+                            </p>
+                            <div class="form-group">
+                                <label>Select Machine</label>
+                                <select id="error-map-machine" class="form-input" onchange="loadErrorMappings()">
+                                    <option value="">-- Global Mappings --</option>
+                                    ${state.machines.map(m => `<option value="${m.machine_id}">${m.name} (${m.machine_id})</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        <div id="error-mappings-list"></div>
+                    `;
+                    loadErrorMappings();
+                    break;
+
+                case 'kafka':
+                    container.innerHTML = `
+                        <div class="form-section" style="margin-bottom: 2rem;">
+                            <h3>Kafka Message Deduplication</h3>
+                            <p style="color: var(--color-text-secondary); margin-bottom: 1rem;">
+                                Monitor Kafka message processing status and deduplication tracking.
+                            </p>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div class="form-group">
+                                    <label>Machine Filter</label>
+                                    <select id="kafka-machine-filter" class="form-input" onchange="loadKafkaMessages()">
+                                        <option value="">All Machines</option>
+                                        ${state.machines.map(m => `<option value="${m.machine_id}">${m.name}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Status Filter</label>
+                                    <select id="kafka-status-filter" class="form-input" onchange="loadKafkaMessages()">
+                                        <option value="">All Statuses</option>
+                                        <option value="processed">Processed</option>
+                                        <option value="failed">Failed</option>
+                                        <option value="skipped">Skipped</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Topic Filter</label>
+                                    <select id="kafka-topic-filter" class="form-input" onchange="loadKafkaMessages()">
+                                        <option value="">All Topics</option>
+                                        ${[...new Set((state.kafkaMessages || []).map(k => k.kafka_topic))].map(topic => 
+                                            `<option value="${topic}">${topic}</option>`
+                                        ).join('')}
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                                <button class="btn btn-primary" onclick="loadKafkaMessages()">Refresh</button>
+                                <button class="btn btn-secondary" onclick="exportKafkaData()">Export CSV</button>
+                                <button class="btn btn-danger" onclick="cleanupOldKafkaMessages()">Cleanup Old Messages (30+ days)</button>
+                            </div>
+                        </div>
+                        <div id="kafka-stats" style="margin-bottom: 2rem;"></div>
+                        <div id="kafka-messages-list"></div>
+                    `;
+                    loadKafkaMessages();
+                    break;
+            }
+        }
+
+        window.setDeviceTab = function(tab) {
+            state.deviceTab = tab;
+            renderDeviceTabContent();
+        };
+
+        window.loadThresholds = function() {
+            const machineId = document.getElementById('threshold-machine')?.value;
+            const thresholdsList = document.getElementById('thresholds-list');
+            if (!thresholdsList) return;
+
+            const relevantThresholds = machineId 
+                ? state.thresholds.filter(t => t.machine_id === machineId)
+                : state.thresholds.filter(t => !t.machine_id);
+
+            thresholdsList.innerHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Sensor</th>
+                                <th>Min</th>
+                                <th>Max</th>
+                                <th>Warning Min</th>
+                                <th>Warning Max</th>
+                                <th>Critical Min</th>
+                                <th>Critical Max</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${state.valueCategories.map(vc => {
+                                const threshold = relevantThresholds.find(t => t.value_category_id === vc.id);
+                                return `
+                                    <tr>
+                                        <td>${vc.value_name}</td>
+                                        <td>${threshold?.min_value ?? '-'}</td>
+                                        <td>${threshold?.max_value ?? '-'}</td>
+                                        <td>${threshold?.warning_min ?? '-'}</td>
+                                        <td>${threshold?.warning_max ?? '-'}</td>
+                                        <td>${threshold?.critical_min ?? '-'}</td>
+                                        <td>${threshold?.critical_max ?? '-'}</td>
+                                        <td>
+                                            <button class="btn btn-secondary" onclick="editThreshold(${vc.id}, '${machineId}')">Edit</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        };
+
+        window.editMachine = function(machineId) {
+            const machine = state.machines.find(m => m.machine_id === machineId);
+            if (!machine) return;
+
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Edit Machine: ${machine.machine_id}</h3>
+                        <button class="modal-close-btn">&times;</button>
+                    </div>
+                    <form id="edit-machine-form">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Machine Name</label>
+                                <input type="text" id="edit-name" value="${machine.name}" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Location</label>
+                                <input type="text" id="edit-location" value="${machine.location || ''}" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Model</label>
+                                <input type="text" id="edit-model" value="${machine.model || ''}" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Manufacturer</label>
+                                <input type="text" id="edit-manufacturer" value="${machine.manufacturer || ''}" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Status</label>
+                                <select id="edit-status" class="form-input">
+                                    <option value="active" ${machine.status === 'active' ? 'selected' : ''}>Active</option>
+                                    <option value="inactive" ${machine.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                                    <option value="maintenance" ${machine.status === 'maintenance' ? 'selected' : ''}>Maintenance</option>
+                                    <option value="error" ${machine.status === 'error' ? 'selected' : ''}>Error</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.querySelector('.modal-close-btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+
+            modal.querySelector('#edit-machine-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                machine.name = document.getElementById('edit-name').value;
+                machine.location = document.getElementById('edit-location').value;
+                machine.model = document.getElementById('edit-model').value;
+                machine.manufacturer = document.getElementById('edit-manufacturer').value;
+                machine.status = document.getElementById('edit-status').value;
+                document.body.removeChild(modal);
+                renderDeviceManagement();
+                alert('Machine updated successfully!');
+            });
+        };
+
+        window.editThreshold = function(vcId, machineId) {
+            const vc = state.valueCategories.find(v => v.id === vcId);
+            const threshold = state.thresholds.find(t => 
+                t.value_category_id === vcId && 
+                (machineId ? t.machine_id === machineId : !t.machine_id)
+            );
+
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Edit Threshold: ${vc.value_name}</h3>
+                        <button class="modal-close-btn">&times;</button>
+                    </div>
+                    <form id="edit-threshold-form">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Min Value</label>
+                                <input type="number" step="0.01" id="edit-min" value="${threshold?.min_value ?? ''}" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Max Value</label>
+                                <input type="number" step="0.01" id="edit-max" value="${threshold?.max_value ?? ''}" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Warning Min</label>
+                                <input type="number" step="0.01" id="edit-warn-min" value="${threshold?.warning_min ?? ''}" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Warning Max</label>
+                                <input type="number" step="0.01" id="edit-warn-max" value="${threshold?.warning_max ?? ''}" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Critical Min</label>
+                                <input type="number" step="0.01" id="edit-crit-min" value="${threshold?.critical_min ?? ''}" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Critical Max</label>
+                                <input type="number" step="0.01" id="edit-crit-max" value="${threshold?.critical_max ?? ''}" class="form-input">
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">Save Threshold</button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.querySelector('.modal-close-btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+
+            modal.querySelector('#edit-threshold-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const updatedThreshold = {
+                    id: threshold?.id || state.thresholds.length + 1,
+                    value_category_id: vcId,
+                    machine_id: machineId || null,
+                    min_value: parseFloat(document.getElementById('edit-min').value) || null,
+                    max_value: parseFloat(document.getElementById('edit-max').value) || null,
+                    warning_min: parseFloat(document.getElementById('edit-warn-min').value) || null,
+                    warning_max: parseFloat(document.getElementById('edit-warn-max').value) || null,
+                    critical_min: parseFloat(document.getElementById('edit-crit-min').value) || null,
+                    critical_max: parseFloat(document.getElementById('edit-crit-max').value) || null,
+                    warning_error_id: threshold?.warning_error_id || null,
+                    critical_error_id: threshold?.critical_error_id || null,
+                };
+
+                if (threshold) {
+                    const index = state.thresholds.findIndex(t => t.id === threshold.id);
+                    state.thresholds[index] = updatedThreshold;
+                } else {
+                    state.thresholds.push(updatedThreshold);
+                }
+
+                document.body.removeChild(modal);
+                loadThresholds();
+                alert('Threshold updated successfully!');
+            });
+        };
+
+        window.addCategory = function() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Add Machine Category</h3>
+                        <button class="modal-close-btn">&times;</button>
+                    </div>
+                    <form id="add-category-form">
+                        <div class="form-group">
+                            <label>Category Name *</label>
+                            <input type="text" id="new-cat-name" class="form-input" required placeholder="e.g., Solar Water Heaters">
+                        </div>
+                        <div class="form-group">
+                            <label>Category Code *</label>
+                            <input type="text" id="new-cat-code" class="form-input" required placeholder="e.g., SWH">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="new-cat-description" class="form-input" rows="3" placeholder="Describe this category"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Icon SVG Path</label>
+                            <input type="text" id="new-cat-icon" class="form-input" placeholder="SVG path data">
+                            <small style="color: var(--color-text-secondary);">Enter the 'd' attribute of an SVG path element</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Color *</label>
+                            <input type="color" id="new-cat-color" class="form-input" value="#3b82f6">
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">Add Category</button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.querySelector('.modal-close-btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+
+            modal.querySelector('#add-category-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newCategory = {
+                    id: state.categories.length + 1,
+                    category_name: document.getElementById('new-cat-name').value,
+                    category_code: document.getElementById('new-cat-code').value,
+                    description: document.getElementById('new-cat-description').value,
+                    icon: document.getElementById('new-cat-icon').value || 'M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z',
+                    color: document.getElementById('new-cat-color').value,
+                    is_active: true,
+                };
+                state.categories.push(newCategory);
+                document.body.removeChild(modal);
+                state.deviceTab = 'categories';
+                renderDeviceTabContent();
+                alert('Machine category added successfully!');
+            });
+        };
+
+        window.editCategory = function(categoryId) {
+            const category = state.categories.find(c => c.id === categoryId);
+            if (!category) return;
+
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Edit Category: ${category.category_name}</h3>
+                        <button class="modal-close-btn">&times;</button>
+                    </div>
+                    <form id="edit-category-form">
+                        <div class="form-group">
+                            <label>Category Name</label>
+                            <input type="text" id="edit-cat-name" value="${category.category_name}" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Category Code</label>
+                            <input type="text" id="edit-cat-code" value="${category.category_code}" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="edit-cat-description" class="form-input" rows="3">${category.description || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Icon SVG Path</label>
+                            <input type="text" id="edit-cat-icon" value="${category.icon}" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Color</label>
+                            <input type="color" id="edit-cat-color" value="${category.color}" class="form-input">
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.querySelector('.modal-close-btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+
+            modal.querySelector('#edit-category-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                category.category_name = document.getElementById('edit-cat-name').value;
+                category.category_code = document.getElementById('edit-cat-code').value;
+                category.description = document.getElementById('edit-cat-description').value;
+                category.icon = document.getElementById('edit-cat-icon').value;
+                category.color = document.getElementById('edit-cat-color').value;
+                document.body.removeChild(modal);
+                renderDeviceTabContent();
+                alert('Category updated successfully!');
+            });
+        };
+
+        window.toggleCategoryActive = function(categoryId) {
+            const category = state.categories.find(c => c.id === categoryId);
+            if (!category) return;
+            category.is_active = !category.is_active;
+            renderDeviceTabContent();
+        };
+
+        window.addSensor = function() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Add Sensor Type</h3>
+                        <button class="modal-close-btn">&times;</button>
+                    </div>
+                    <form id="add-sensor-form">
+                        <div class="form-group">
+                            <label>Value Name *</label>
+                            <input type="text" id="new-sensor-name" class="form-input" required placeholder="e.g., Collector Temperature">
+                        </div>
+                        <div class="form-group">
+                            <label>Value Code *</label>
+                            <input type="text" id="new-sensor-code" class="form-input" required placeholder="e.g., collector_temp">
+                            <small style="color: var(--color-text-secondary);">Use lowercase with underscores</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Unit</label>
+                            <input type="text" id="new-sensor-unit" class="form-input" placeholder="e.g., °C, RPM, %">
+                        </div>
+                        <div class="form-group">
+                            <label>Data Type *</label>
+                            <select id="new-sensor-type" class="form-input" required>
+                                <option value="integer">Integer</option>
+                                <option value="decimal">Decimal</option>
+                                <option value="boolean">Boolean</option>
+                                <option value="string">String</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="new-sensor-description" class="form-input" rows="3" placeholder="Describe this sensor type"></textarea>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">Add Sensor Type</button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.querySelector('.modal-close-btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+
+            modal.querySelector('#add-sensor-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newSensor = {
+                    id: state.valueCategories.length + 1,
+                    value_name: document.getElementById('new-sensor-name').value,
+                    value_code: document.getElementById('new-sensor-code').value,
+                    unit: document.getElementById('new-sensor-unit').value,
+                    data_type: document.getElementById('new-sensor-type').value,
+                    description: document.getElementById('new-sensor-description').value,
+                    is_active: true,
+                };
+                state.valueCategories.push(newSensor);
+                document.body.removeChild(modal);
+                state.deviceTab = 'sensors';
+                renderDeviceTabContent();
+                alert('Sensor type added successfully!');
+            });
+        };
+
+        window.editSensor = function(sensorId) {
+            const sensor = state.valueCategories.find(s => s.id === sensorId);
+            if (!sensor) return;
+
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Edit Sensor Type: ${sensor.value_name}</h3>
+                        <button class="modal-close-btn">&times;</button>
+                    </div>
+                    <form id="edit-sensor-form">
+                        <div class="form-group">
+                            <label>Value Name</label>
+                            <input type="text" id="edit-sensor-name" value="${sensor.value_name}" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Value Code</label>
+                            <input type="text" id="edit-sensor-code" value="${sensor.value_code}" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Unit</label>
+                            <input type="text" id="edit-sensor-unit" value="${sensor.unit || ''}" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Data Type</label>
+                            <select id="edit-sensor-type" class="form-input">
+                                <option value="integer" ${sensor.data_type === 'integer' ? 'selected' : ''}>Integer</option>
+                                <option value="decimal" ${sensor.data_type === 'decimal' ? 'selected' : ''}>Decimal</option>
+                                <option value="boolean" ${sensor.data_type === 'boolean' ? 'selected' : ''}>Boolean</option>
+                                <option value="string" ${sensor.data_type === 'string' ? 'selected' : ''}>String</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="edit-sensor-description" class="form-input" rows="3">${sensor.description || ''}</textarea>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.querySelector('.modal-close-btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+
+            modal.querySelector('#edit-sensor-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                sensor.value_name = document.getElementById('edit-sensor-name').value;
+                sensor.value_code = document.getElementById('edit-sensor-code').value;
+                sensor.unit = document.getElementById('edit-sensor-unit').value;
+                sensor.data_type = document.getElementById('edit-sensor-type').value;
+                sensor.description = document.getElementById('edit-sensor-description').value;
+                document.body.removeChild(modal);
+                renderDeviceTabContent();
+                alert('Sensor type updated successfully!');
+            });
+        };
+
+        window.toggleSensorActive = function(sensorId) {
+            const sensor = state.valueCategories.find(s => s.id === sensorId);
+            if (!sensor) return;
+            sensor.is_active = !sensor.is_active;
+            renderDeviceTabContent();
+        };
+
+        window.addErrorType = function() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Add Error Type</h3>
+                        <button class="modal-close-btn">&times;</button>
+                    </div>
+                    <form id="add-error-form">
+                        <div class="form-group">
+                            <label>Error Code *</label>
+                            <input type="text" id="new-error-code" class="form-input" required placeholder="e.g., ERR_OVERHEAT">
+                        </div>
+                        <div class="form-group">
+                            <label>Error Name *</label>
+                            <input type="text" id="new-error-name" class="form-input" required placeholder="e.g., Overheating">
+                        </div>
+                        <div class="form-group">
+                            <label>Severity *</label>
+                            <select id="new-error-severity" class="form-input" required>
+                                <option value="info">Info</option>
+                                <option value="warning">Warning</option>
+                                <option value="error">Error</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="new-error-description" class="form-input" rows="3" placeholder="Describe the error condition"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Recommended Action</label>
+                            <textarea id="new-error-action" class="form-input" rows="3" placeholder="What should be done when this error occurs?"></textarea>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">Add Error Type</button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.querySelector('.modal-close-btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+
+            modal.querySelector('#add-error-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newError = {
+                    id: state.errorTypes.length + 1,
+                    error_code: document.getElementById('new-error-code').value,
+                    error_name: document.getElementById('new-error-name').value,
+                    severity: document.getElementById('new-error-severity').value,
+                    description: document.getElementById('new-error-description').value,
+                    recommended_action: document.getElementById('new-error-action').value,
+                };
+                state.errorTypes.push(newError);
+                document.body.removeChild(modal);
+                state.deviceTab = 'errors';
+                renderDeviceTabContent();
+                alert('Error type added successfully!');
+            });
+        };
+
+        window.editErrorType = function(errorId) {
+            const error = state.errorTypes.find(e => e.id === errorId);
+            if (!error) return;
+
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Edit Error Type: ${error.error_code}</h3>
+                        <button class="modal-close-btn">&times;</button>
+                    </div>
+                    <form id="edit-error-form">
+                        <div class="form-group">
+                            <label>Error Code</label>
+                            <input type="text" id="edit-error-code" value="${error.error_code}" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Error Name</label>
+                            <input type="text" id="edit-error-name" value="${error.error_name}" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Severity</label>
+                            <select id="edit-error-severity" class="form-input">
+                                <option value="info" ${error.severity === 'info' ? 'selected' : ''}>Info</option>
+                                <option value="warning" ${error.severity === 'warning' ? 'selected' : ''}>Warning</option>
+                                <option value="error" ${error.severity === 'error' ? 'selected' : ''}>Error</option>
+                                <option value="critical" ${error.severity === 'critical' ? 'selected' : ''}>Critical</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="edit-error-description" class="form-input" rows="3">${error.description || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Recommended Action</label>
+                            <textarea id="edit-error-action" class="form-input" rows="3">${error.recommended_action || ''}</textarea>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.querySelector('.modal-close-btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+
+            modal.querySelector('#edit-error-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                error.error_code = document.getElementById('edit-error-code').value;
+                error.error_name = document.getElementById('edit-error-name').value;
+                error.severity = document.getElementById('edit-error-severity').value;
+                error.description = document.getElementById('edit-error-description').value;
+                error.recommended_action = document.getElementById('edit-error-action').value;
+                document.body.removeChild(modal);
+                renderDeviceTabContent();
+                alert('Error type updated successfully!');
+            });
+        };
+
+        window.deleteErrorType = function(errorId) {
+            if (!confirm('Are you sure you want to delete this error type?')) return;
+            state.errorTypes = state.errorTypes.filter(e => e.id !== errorId);
+            renderDeviceTabContent();
+            alert('Error type deleted successfully!');
+        };
+
+        window.loadErrorMappings = function() {
+            const machineId = document.getElementById('error-map-machine')?.value;
+            const mappingsList = document.getElementById('error-mappings-list');
+            if (!mappingsList) return;
+
+            const relevantThresholds = machineId 
+                ? state.thresholds.filter(t => t.machine_id === machineId)
+                : state.thresholds.filter(t => !t.machine_id);
+
+            mappingsList.innerHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Sensor</th>
+                                <th>Warning Error</th>
+                                <th>Critical Error</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${state.valueCategories.map(vc => {
+                                const threshold = relevantThresholds.find(t => t.value_category_id === vc.id);
+                                const warningError = state.errorTypes.find(e => e.id === threshold?.warning_error_id);
+                                const criticalError = state.errorTypes.find(e => e.id === threshold?.critical_error_id);
+                                
+                                return `
+                                    <tr>
+                                        <td>${vc.value_name}</td>
+                                        <td>${warningError?.error_name || '-'}</td>
+                                        <td>${criticalError?.error_name || '-'}</td>
+                                        <td>
+                                            <button class="btn btn-secondary" onclick="editErrorMapping(${vc.id}, '${machineId}')">Configure</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        };
+
+        window.editErrorMapping = function(vcId, machineId) {
+            const vc = state.valueCategories.find(v => v.id === vcId);
+            const threshold = state.thresholds.find(t => 
+                t.value_category_id === vcId && 
+                (machineId ? t.machine_id === machineId : !t.machine_id)
+            );
+
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Configure Error Mapping: ${vc.value_name}</h3>
+                        <button class="modal-close-btn">&times;</button>
+                    </div>
+                    <form id="edit-error-mapping-form">
+                        <div class="form-group">
+                            <label>Warning Error Type</label>
+                            <select id="warning-error-select" class="form-input">
+                                <option value="">-- No Error --</option>
+                                ${state.errorTypes.filter(e => e.severity === 'warning').map(e => 
+                                    `<option value="${e.id}" ${threshold?.warning_error_id === e.id ? 'selected' : ''}>${e.error_name} (${e.error_code})</option>`
+                                ).join('')}
+                            </select>
+                            <small style="color: var(--color-text-secondary);">Triggered when warning thresholds are violated</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Critical Error Type</label>
+                            <select id="critical-error-select" class="form-input">
+                                <option value="">-- No Error --</option>
+                                ${state.errorTypes.filter(e => e.severity === 'critical' || e.severity === 'error').map(e => 
+                                    `<option value="${e.id}" ${threshold?.critical_error_id === e.id ? 'selected' : ''}>${e.error_name} (${e.error_code})</option>`
+                                ).join('')}
+                            </select>
+                            <small style="color: var(--color-text-secondary);">Triggered when critical thresholds are violated</small>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">Save Mapping</button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.querySelector('.modal-close-btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+
+            modal.querySelector('#edit-error-mapping-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const warningErrorId = document.getElementById('warning-error-select').value;
+                const criticalErrorId = document.getElementById('critical-error-select').value;
+
+                if (threshold) {
+                    threshold.warning_error_id = warningErrorId ? parseInt(warningErrorId) : null;
+                    threshold.critical_error_id = criticalErrorId ? parseInt(criticalErrorId) : null;
+                } else {
+                    // Create new threshold if it doesn't exist
+                    state.thresholds.push({
+                        id: state.thresholds.length + 1,
+                        value_category_id: vcId,
+                        machine_id: machineId || null,
+                        min_value: null,
+                        max_value: null,
+                        warning_min: null,
+                        warning_max: null,
+                        critical_min: null,
+                        critical_max: null,
+                        warning_error_id: warningErrorId ? parseInt(warningErrorId) : null,
+                        critical_error_id: criticalErrorId ? parseInt(criticalErrorId) : null,
+                    });
+                }
+
+                document.body.removeChild(modal);
+                loadErrorMappings();
+                alert('Error mapping updated successfully!');
+            });
+        };
+
+        // Kafka Message Functions
+        window.loadKafkaMessages = async function() {
+            const machineFilter = document.getElementById('kafka-machine-filter')?.value || '';
+            const statusFilter = document.getElementById('kafka-status-filter')?.value || '';
+            const topicFilter = document.getElementById('kafka-topic-filter')?.value || '';
+
+            // Try to fetch from API
+            try {
+                const params = new URLSearchParams();
+                if (machineFilter) params.append('machine_id', machineFilter);
+                if (statusFilter) params.append('status', statusFilter);
+                if (topicFilter) params.append('topic', topicFilter);
+                
+                const response = await fetch(`/api/kafka/messages?${params.toString()}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    state.kafkaMessages = data.messages || [];
+                }
+            } catch (error) {
+                console.log('Using local Kafka data');
+            }
+
+            // Filter messages
+            let filteredMessages = state.kafkaMessages || [];
+            if (machineFilter) {
+                filteredMessages = filteredMessages.filter(m => m.machine_id === machineFilter);
+            }
+            if (statusFilter) {
+                filteredMessages = filteredMessages.filter(m => m.processing_status === statusFilter);
+            }
+            if (topicFilter) {
+                filteredMessages = filteredMessages.filter(m => m.kafka_topic === topicFilter);
+            }
+
+            // Calculate statistics
+            const totalMessages = filteredMessages.length;
+            const processedCount = filteredMessages.filter(m => m.processing_status === 'processed').length;
+            const failedCount = filteredMessages.filter(m => m.processing_status === 'failed').length;
+            const skippedCount = filteredMessages.filter(m => m.processing_status === 'skipped').length;
+
+            const statsContainer = document.getElementById('kafka-stats');
+            if (statsContainer) {
+                statsContainer.innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+                        <div class="form-section" style="padding: 1rem;">
+                            <h4 style="font-size: 0.875rem; color: var(--color-text-secondary); margin-bottom: 0.5rem;">Total Messages</h4>
+                            <div style="font-size: 2rem; font-weight: bold;">${totalMessages}</div>
+                        </div>
+                        <div class="form-section" style="padding: 1rem;">
+                            <h4 style="font-size: 0.875rem; color: var(--color-text-secondary); margin-bottom: 0.5rem;">Processed</h4>
+                            <div style="font-size: 2rem; font-weight: bold; color: var(--color-success);">${processedCount}</div>
+                        </div>
+                        <div class="form-section" style="padding: 1rem;">
+                            <h4 style="font-size: 0.875rem; color: var(--color-text-secondary); margin-bottom: 0.5rem;">Failed</h4>
+                            <div style="font-size: 2rem; font-weight: bold; color: var(--color-danger);">${failedCount}</div>
+                        </div>
+                        <div class="form-section" style="padding: 1rem;">
+                            <h4 style="font-size: 0.875rem; color: var(--color-text-secondary); margin-bottom: 0.5rem;">Skipped</h4>
+                            <div style="font-size: 2rem; font-weight: bold; color: var(--color-warning);">${skippedCount}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const messagesContainer = document.getElementById('kafka-messages-list');
+            if (messagesContainer) {
+                messagesContainer.innerHTML = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Message ID</th>
+                                    <th>Machine</th>
+                                    <th>Topic</th>
+                                    <th>Partition</th>
+                                    <th>Offset</th>
+                                    <th>Timestamp</th>
+                                    <th>Status</th>
+                                    <th>Reading ID</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${filteredMessages.slice(0, 50).map(msg => {
+                                    const machine = state.machines.find(m => m.machine_id === msg.machine_id);
+                                    return `
+                                        <tr>
+                                            <td style="font-family: monospace; font-size: 0.75rem;">${msg.message_id}</td>
+                                            <td>${machine?.name || msg.machine_id}</td>
+                                            <td>${msg.kafka_topic}</td>
+                                            <td>${msg.kafka_partition}</td>
+                                            <td>${msg.kafka_offset}</td>
+                                            <td>${new Date(msg.message_timestamp).toLocaleString()}</td>
+                                            <td><span class="status-badge ${msg.processing_status === 'processed' ? 'normal' : msg.processing_status === 'failed' ? 'critical' : 'warning'}">${msg.processing_status}</span></td>
+                                            <td>${msg.reading_id || '-'}</td>
+                                            <td>
+                                                <button class="btn btn-secondary" onclick="viewKafkaMessageDetails('${msg.message_id}')">Details</button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                        ${filteredMessages.length > 50 ? `<p style="margin-top: 1rem; color: var(--color-text-secondary);">Showing 50 of ${filteredMessages.length} messages</p>` : ''}
+                    </div>
+                `;
+            }
+        };
+
+        window.viewKafkaMessageDetails = function(messageId) {
+            const message = state.kafkaMessages.find(m => m.message_id === messageId);
+            if (!message) return;
+
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Kafka Message Details</h3>
+                        <button class="modal-close-btn">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr style="border-bottom: 1px solid var(--color-border);">
+                                <td style="padding: 0.75rem; font-weight: 600; width: 200px;">Message ID</td>
+                                <td style="padding: 0.75rem; font-family: monospace;">${message.message_id}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--color-border);">
+                                <td style="padding: 0.75rem; font-weight: 600;">Machine ID</td>
+                                <td style="padding: 0.75rem;">${message.machine_id}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--color-border);">
+                                <td style="padding: 0.75rem; font-weight: 600;">Kafka Topic</td>
+                                <td style="padding: 0.75rem;">${message.kafka_topic}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--color-border);">
+                                <td style="padding: 0.75rem; font-weight: 600;">Partition</td>
+                                <td style="padding: 0.75rem;">${message.kafka_partition}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--color-border);">
+                                <td style="padding: 0.75rem; font-weight: 600;">Offset</td>
+                                <td style="padding: 0.75rem;">${message.kafka_offset}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--color-border);">
+                                <td style="padding: 0.75rem; font-weight: 600;">Message Timestamp</td>
+                                <td style="padding: 0.75rem;">${new Date(message.message_timestamp).toLocaleString()}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--color-border);">
+                                <td style="padding: 0.75rem; font-weight: 600;">Message Hash</td>
+                                <td style="padding: 0.75rem; font-family: monospace; font-size: 0.875rem;">${message.message_hash}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--color-border);">
+                                <td style="padding: 0.75rem; font-weight: 600;">Processed At</td>
+                                <td style="padding: 0.75rem;">${new Date(message.processed_at).toLocaleString()}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--color-border);">
+                                <td style="padding: 0.75rem; font-weight: 600;">Status</td>
+                                <td style="padding: 0.75rem;"><span class="status-badge ${message.processing_status === 'processed' ? 'normal' : message.processing_status === 'failed' ? 'critical' : 'warning'}">${message.processing_status}</span></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--color-border);">
+                                <td style="padding: 0.75rem; font-weight: 600;">Reading ID</td>
+                                <td style="padding: 0.75rem;">${message.reading_id || 'N/A'}</td>
+                            </tr>
+                            ${message.error_message ? `
+                                <tr>
+                                    <td style="padding: 0.75rem; font-weight: 600;">Error Message</td>
+                                    <td style="padding: 0.75rem; color: var(--color-danger);">${message.error_message}</td>
+                                </tr>
+                            ` : ''}
+                        </table>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.querySelector('.modal-close-btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+        };
+
+        window.exportKafkaData = function() {
+            const machineFilter = document.getElementById('kafka-machine-filter')?.value || '';
+            const statusFilter = document.getElementById('kafka-status-filter')?.value || '';
+            const topicFilter = document.getElementById('kafka-topic-filter')?.value || '';
+
+            let filteredMessages = state.kafkaMessages || [];
+            if (machineFilter) filteredMessages = filteredMessages.filter(m => m.machine_id === machineFilter);
+            if (statusFilter) filteredMessages = filteredMessages.filter(m => m.processing_status === statusFilter);
+            if (topicFilter) filteredMessages = filteredMessages.filter(m => m.kafka_topic === topicFilter);
+
+            const headers = ['Message ID', 'Machine ID', 'Topic', 'Partition', 'Offset', 'Timestamp', 'Status', 'Reading ID', 'Error'];
+            const rows = filteredMessages.map(m => [
+                m.message_id,
+                m.machine_id,
+                m.kafka_topic,
+                m.kafka_partition,
+                m.kafka_offset,
+                m.message_timestamp,
+                m.processing_status,
+                m.reading_id || '',
+                m.error_message || ''
+            ]);
+
+            const csv = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `kafka-messages-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        window.cleanupOldKafkaMessages = async function() {
+            if (!confirm('This will delete Kafka messages older than 30 days. Continue?')) return;
+
+            try {
+                const response = await fetch('/api/kafka/cleanup', { method: 'POST' });
+                if (response.ok) {
+                    alert('Cleanup completed successfully');
+                    loadKafkaMessages();
+                } else {
+                    throw new Error('Cleanup failed');
+                }
+            } catch (error) {
+                // Simulate cleanup locally
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                const oldCount = state.kafkaMessages.length;
+                state.kafkaMessages = state.kafkaMessages.filter(m => new Date(m.processed_at) > thirtyDaysAgo);
+                alert(`Cleanup completed. Removed ${oldCount - state.kafkaMessages.length} old messages.`);
+                loadKafkaMessages();
+            }
+        };
+
+        function renderSettings() {
+            const html = `
+                <div class="form-section">
+                    <h3>My Profile</h3>
+                    <form id="profile-form">
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" value="${state.currentUser.name}" class="form-input" id="user-name">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" value="${state.currentUser.email}" class="form-input" id="user-email">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Profile</button>
+                    </form>
+                </div>
+            `;
+            document.getElementById('content').innerHTML = html;
+
+            document.getElementById('profile-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                state.currentUser.name = document.getElementById('user-name').value;
+                state.currentUser.email = document.getElementById('user-email').value;
+                alert('Profile updated!');
+            });
+        }
+
+        function render() {
+            renderSidebar();
+            renderHeader();
+
+            // Stop live monitoring when leaving Live Monitoring view
+            if (state.view !== 'Live Monitoring') {
+                stopLiveMonitoring();
+            }
+
+            switch(state.view) {
+                case 'Dashboard':
+                    renderDashboard();
+                    break;
+                case 'Live Monitoring':
+                    renderLiveMonitoring();
+                    break;
+                case 'Reports':
+                    renderReports();
+                    break;
+                case 'Device Management':
+                    renderDeviceManagement();
+                    break;
+                case 'Settings':
+                    renderSettings();
+                    break;
+            }
+        }
+
+        // Global Functions
+        window.monitorMachine = function(machineId) {
+            state.selectedMachine = state.machines.find(m => m.machine_id === machineId);
+            state.view = 'Live Monitoring';
+            render();
+        };
+
+        window.showSensorHistory = function(vcId) {
+            const vc = state.valueCategories.find(v => v.id === vcId);
+            if (!vc) return;
+
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const today = new Date();
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>History: ${vc.value_name}</h3>
+                        <button class="modal-close-btn">&times;</button>
+                    </div>
+                    <div class="history-controls">
+                        <input type="date" id="start-date" value="${sevenDaysAgo.toISOString().split('T')[0]}" class="form-input">
+                        <span>to</span>
+                        <input type="date" id="end-date" value="${today.toISOString().split('T')[0]}" class="form-input">
+                        <button class="btn btn-primary" onclick="updateChart()">Update</button>
+                    </div>
+                    <div class="chart-container" id="chart-display">
+                        <p>Loading chart...</p>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            const renderChart = (startDate, endDate) => {
+                const start = new Date(startDate).getTime();
+                const end = new Date(endDate).getTime() + (24 * 60 * 60 * 1000);
+                
+                const filteredReadings = state.readings
+                    .filter(r => {
+                        const rDate = new Date(r.timestamp).getTime();
+                        return r.machine_id === state.selectedMachine.machine_id && rDate >= start && rDate <= end;
+                    })
+                    .map(r => ({
+                        value: r.values.find(v => v.value_category_id === vc.id)?.value,
+                        timestamp: new Date(r.timestamp).getTime(),
+                    }))
+                    .filter(r => typeof r.value === 'number');
+
+                const chartDisplay = document.getElementById('chart-display');
+                
+                if (filteredReadings.length < 2) {
+                    chartDisplay.innerHTML = '<p>Not enough data to display chart for the selected range.</p>';
+                    return;
+                }
+
+                const values = filteredReadings.map(r => r.value);
+                const min = Math.min(...values);
+                const max = Math.max(...values);
+                const range = max - min || 1;
+
+                const timestamps = filteredReadings.map(r => r.timestamp);
+                const tMin = Math.min(...timestamps);
+                const tMax = Math.max(...timestamps);
+                const tRange = tMax - tMin || 1;
+
+                const points = filteredReadings.map(r => ({
+                    x: ((r.timestamp - tMin) / tRange) * 500,
+                    y: 250 - (((r.value) - min) / range) * 220
+                }));
+
+                const pathData = points.map((p, i) => (i === 0 ? 'M' : 'L') + `${p.x} ${p.y}`).join(' ');
+                const areaData = pathData + ` L ${points[points.length - 1].x} 250 L ${points[0].x} 250 Z`;
+
+                chartDisplay.innerHTML = `
+                    <svg viewBox="0 0 500 250">
+                        ${[0, 0.25, 0.5, 0.75, 1].map(f => `
+                            <g>
+                                <line class="grid-line" x1="0" x2="500" y1="${250 - f * 220}" y2="${250 - f * 220}" />
+                                <text class="axis-label" x="-10" y="${255 - f * 220}" text-anchor="end">
+                                    ${(min + f * range).toFixed(1)}
+                                </text>
+                            </g>
+                        `).join('')}
+                        <path class="area" d="${areaData}" />
+                        <path class="line" d="${pathData}" />
+                    </svg>
+                `;
+            };
+
+            window.updateChart = () => {
+                const startDate = document.getElementById('start-date').value;
+                const endDate = document.getElementById('end-date').value;
+                renderChart(startDate, endDate);
+            };
+
+            renderChart(sevenDaysAgo.toISOString().split('T')[0], today.toISOString().split('T')[0]);
+
+            modal.querySelector('.modal-close-btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+                delete window.updateChart;
+            });
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                    delete window.updateChart;
+                }
+            });
+        };
+
+        window.diagnoseSensor = function(sensorName, value, unit, vcId) {
+            const readingHistory = state.readings
+                .filter(r => r.machine_id === state.selectedMachine.machine_id)
+                .map(r => r.values.find(v => v.value_category_id === vcId)?.value)
+                .filter(v => typeof v === 'number');
+
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>AI Diagnosis</h3>
+                        <button class="modal-close-btn">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <h4>Analysis</h4>
+                        <p>The ${sensorName} reading of ${value}${unit} is currently within normal operating parameters. Recent trends show stable performance with minor fluctuations typical of normal system operation.</p>
+                        <h4 style="margin-top: 1rem;">Recommended Controls:</h4>
+                        <div class="modal-actions">
+                            <button class="btn btn-primary" onclick="sendCommand('set_target_temp', '75')">Set Target to 75°C</button>
+                            <button class="btn btn-primary" onclick="sendCommand('adjust_pump', 'auto')">Auto Adjust Pump</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.querySelector('.modal-close-btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+        };
+
+        window.sendCommand = function(command, value) {
+            alert(`Sending command: ${command} with value ${value}`);
+        };
+
+        window.showAddMachine = function() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Add New Machine</h3>
+                        <button class="modal-close-btn">&times;</button>
+                    </div>
+                    <form id="add-machine-form">
+                        <div class="form-group">
+                            <label>Machine Name</label>
+                            <input type="text" class="form-input" id="machine-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Machine ID</label>
+                            <input type="text" class="form-input" id="machine-id" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Location</label>
+                            <input type="text" class="form-input" id="machine-location" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select class="form-input" id="machine-category">
+                                ${state.categories.map(cat => `<option value="${cat.id}">${cat.category_name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Machine</button>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.querySelector('.modal-close-btn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+
+            modal.querySelector('#add-machine-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newMachine = {
+                    id: state.machines.length + 1,
+                    machine_id: document.getElementById('machine-id').value,
+                    name: document.getElementById('machine-name').value,
+                    location: document.getElementById('machine-location').value,
+                    category_id: parseInt(document.getElementById('machine-category').value),
+                    status: 'normal',
+                    lastHeartbeat: Date.now()
+                };
+                state.machines.push(newMachine);
+                document.body.removeChild(modal);
+                render();
+                alert('Machine added!');
+            });
+        };
+
+        window.configureMachine = function(machineId) {
+            alert(`Configure machine: ${machineId}`);
+        };
+
+        // Data Simulation
+        setInterval(() => {
+            const machineToUpdate = state.machines[0];
+            if (!machineToUpdate) return;
+
+            let overallStatus = 'normal';
+            const newValues = [];
+
+            state.valueCategories.forEach(vc => {
+                const lastReading = state.readings[state.readings.length - 1];
+                const lastValue = lastReading?.values.find(v => v.value_category_id === vc.id)?.value;
+                let newValue = lastValue;
+
+                if (typeof lastValue === 'number') {
+                    newValue = lastValue + (Math.random() - 0.5) * (vc.value_code.includes('temp') ? 1 : 0.2);
+                } else if (typeof lastValue === 'boolean') {
+                    newValue = Math.random() > 0.1 ? lastValue : !lastValue;
+                }
+
+                newValues.push({ value_category_id: vc.id, value: newValue });
+
+                if (typeof newValue === 'number') {
+                    const threshold = state.thresholds.find(t => t.value_category_id === vc.id);
+                    const status = getHealthStatus(newValue, threshold);
+                    if (status === 'critical') overallStatus = 'critical';
+                    if (status === 'warning' && overallStatus !== 'critical') overallStatus = 'warning';
+
+                    if (status !== 'normal') {
+                        const errorId = status === 'critical' ? threshold.critical_error_id : threshold.warning_error_id;
+                        if(errorId && !state.errors.some(e => e.machine_id === machineToUpdate.machine_id && e.error_type_id === errorId && e.status === 'open')) {
+                            state.errors.push({
+                                id: state.errors.length + 1,
+                                machine_id: machineToUpdate.machine_id,
+                                error_type_id: errorId,
+                                error_timestamp: new Date().toISOString(),
+                                status: 'open',
+                            });
+                        }
+                    }
+                }
+            });
+
+            machineToUpdate.status = overallStatus;
+            machineToUpdate.lastHeartbeat = Date.now();
+
+            state.readings.push({
+                id: state.readings.length + 1,
+                machine_id: machineToUpdate.machine_id,
+                timestamp: new Date().toISOString(),
+                values: newValues
+            });
+
+            if (state.view === 'Live Monitoring') {
+                renderLiveMonitoring();
+            }
+        }, 5000);
+
+        // Initialize
+        render();
+    </script>
+</body>
+</html>

@@ -41,7 +41,8 @@ Class Attrib {
 	public function renderAttrib():void {
 		if (isset($this->Attribs)){
 			foreach($this->Attribs as $key => $value){
-			echo $key.'="'.$value.'"' ;
+				if (strlen($key) > 0) {echo $key.'="'.$value.'"' ;}
+				else {echo " ".$value." " ;}
 			}
 		}
 		
@@ -93,15 +94,15 @@ Class HeaderL implements Element{
 		
 }
 Class Label extends Attrib implements Element{
-	private $Class;
-	private $Label ;
-
-	public function __construct($class,$label){
-		$this->Label = $label;
-		$this->Class = $class;	
-		}
+	private $Label = "" ;
+private $Elements = array();
+	public function __construct(){
+		if (func_num_args() > 0)
+		{
+		$this->Label = func_get_arg(0);
+		}}
 	public function AddElement($element):void {
-		throw new ErrorException("AddElement function  not allowed for Object ".get_class($this), 0, 1, "documents_tags.php", 1 );
+		array_push($this->Elements,(object) $element);
 	}
 	
 	public function render():void {
@@ -140,8 +141,11 @@ Class Icon extends Attrib implements Element{
 Class Span extends Attrib implements Element{
 	private $id ;
 	private $Elements = array();
-	public function __construct($text){
-		$this->Text = $text;
+	public function __construct(){
+		if (func_num_args() > 0)
+		{
+		$this->Text = func_get_arg(0);
+		}
 		
 	}
 	public function AddElement($element):void {
@@ -242,9 +246,11 @@ Class Input extends Attrib implements Element{
 private $id ;
 	private $Elements = array();
 //	private $Icon ;
-	public function __construct($text){
-		if (isset($text)&& strlen($text)>0){
-			$this->Text = $text;
+	public function __construct(){
+		
+		if (func_num_args() > 0)
+		{
+		$this->Text = func_get_arg(0);
 		}
 	}
 	public function AddElement($element):void {
@@ -467,28 +473,8 @@ Class HtmlDoc extends Attrib implements Element{
 		echo "</html>";
 	}	
 }
-Class Path extends Attrib implements Element{
-	private $Elements = array();
-	public function __construct(){
-		
-	}
-    public function AddElement($element){
-		array_push($this->Elements,(object) $element);
-
-	}
-    public function render(){
-	   
-		echo "<path ",$this->renderAttrib(),">";
-		
-		if (isset($this->Elements)){
-			foreach($this->Elements as $element){
-				$element->render();
-			}
-		}
-		echo "</path>";
-	}
-}  
-Class SVectorG extends Attrib implements Element{
+ 
+Class SVG extends Attrib implements Element{
 	private $Elements = array();
 	public function __construct(){
 		
@@ -701,6 +687,126 @@ Class LI extends Attrib implements Element{
 				echo $this->Text;
 			}
 		echo "</li>";
+	}
+}
+Class A extends Attrib implements Element{
+	private String $Text; 
+	private $Elements = array();
+	public function __construct(){
+		if (func_num_args() > 0)
+		{
+		$this->Text = func_get_arg(0);
+		}
+	}
+	public function AddElement($element):void {
+		//throw new ErrorException("AddElement function  not allowed for Object 'Style'", 0, 1, "documents_tags.php", 1 );
+		 array_push($this->Elements,(object) $element);
+	}
+	public function render():void {
+		echo "<a ",$this->renderAttrib(),">";
+			foreach($this->Elements as $element){
+				$element->render();
+			}
+			if (isset($this->Text)) {
+				echo $this->Text;
+			}
+		echo "</a>";
+	}
+}
+Class Path extends Attrib implements Element{
+	private String $Text; 
+	private $Elements = array();
+	public function __construct(){
+		if (func_num_args() > 0)
+		{
+		$this->Text = func_get_arg(0);
+		}
+	}
+	public function AddElement($element):void {
+		//throw new ErrorException("AddElement function  not allowed for Object 'Style'", 0, 1, "documents_tags.php", 1 );
+		 array_push($this->Elements,(object) $element);
+	}
+	public function render():void {
+		echo "<path ",$this->renderAttrib(),">";
+			foreach($this->Elements as $element){
+				$element->render();
+			}
+			if (isset($this->Text)) {
+				echo $this->Text;
+			}
+		echo "</path>";
+	}
+}
+Class Circle extends Attrib implements Element{
+	private String $Text; 
+	private $Elements = array();
+	public function __construct(){
+		if (func_num_args() > 0)
+		{
+		$this->Text = func_get_arg(0);
+		}
+	}
+	public function AddElement($element):void {
+		//throw new ErrorException("AddElement function  not allowed for Object 'Style'", 0, 1, "documents_tags.php", 1 );
+		 array_push($this->Elements,(object) $element);
+	}
+	public function render():void {
+		echo "<circle ",$this->renderAttrib(),">";
+			foreach($this->Elements as $element){
+				$element->render();
+			}
+			if (isset($this->Text)) {
+				echo $this->Text;
+			}
+		echo "</circle>";
+	}
+}
+Class Header extends Attrib implements Element{
+	private String $Text; 
+	private $Elements = array();
+	public function __construct(){
+		if (func_num_args() > 0)
+		{
+		$this->Text = func_get_arg(0);
+		}
+	}
+	public function AddElement($element):void {
+		//throw new ErrorException("AddElement function  not allowed for Object 'Style'", 0, 1, "documents_tags.php", 1 );
+		 array_push($this->Elements,(object) $element);
+	}
+	public function render():void {
+		echo "<header ",$this->renderAttrib(),">";
+			foreach($this->Elements as $element){
+				$element->render();
+			}
+			if (isset($this->Text)) {
+				echo $this->Text;
+			}
+		echo "</header>";
+	}
+}
+Class Section extends Attrib implements Element{
+	private String $Text; 
+	private $Elements = array();
+	public function __construct(){
+		if (func_num_args() > 0)
+		{
+		$this->Text = func_get_arg(0);
+		}
+	}
+	public function AddElement($element):void {
+		//throw new ErrorException("AddElement function  not allowed for Object 'Style'", 0, 1, "documents_tags.php", 1 );
+		 array_push($this->Elements,(object) $element);
+	}
+	public function render():void {
+		echo "<section ",$this->renderAttrib(),">";
+			foreach($this->Elements as $element){
+				$element->render();
+			}
+			if (isset($this->Text)) {
+				echo $this->Text;
+			}
+		echo "</section>";
 	}
 }
 ?>
