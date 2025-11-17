@@ -15,7 +15,7 @@ $CompanyName = "Gilo Telematry Industries";
 $UserName  = "Gift Shipalana";
 $DashboardIcon = "⚙️";
 $DashboardName = "IoT Smart View ";
-$UserMenu = "Dashboard,Live Monitoring,Error Reports,Device Management,Settings,Profile";
+$UserMenu = "Dashboard,Live Monitoring,Error Reports,Device Management,Settings,Profile,Visualization";
 $StyleString = '
         
         * {
@@ -23,7 +23,10 @@ $StyleString = '
             padding: 0;
             box-sizing: border-box;
         }
-
+  #map {
+      height: 400px;
+      width: 100%;
+    }
         :root {
             --color-primary: #3b82f6;
             --color-success: #10b981;
@@ -56,6 +59,9 @@ $StyleString = '
         .app-container {
             display: flex;
             min-height: 100vh;
+			max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
         }
 
         .sidebar {
@@ -345,7 +351,11 @@ $StyleString = '
             cursor: pointer;
             transition: all 0.3s;
         }
-
+.loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
         .sensor-card:hover {
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
@@ -410,7 +420,26 @@ $StyleString = '
             background: #6b728020;
             color: var(--color-text-secondary);
         }
-
+		.modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+		.pop-content {
+            
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 600px;
+            max-height: 80%;
+            overflow-y: auto;
+        }
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -459,7 +488,15 @@ $StyleString = '
             margin-top: 1rem;
             flex-wrap: wrap;
         }
-
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
         .chart-container {
             margin-top: 1rem;
             background: var(--color-bg);
@@ -574,6 +611,17 @@ $StyleString = '
         .print-hide {
             display: block;
         }
+		.close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
 
         @media print {
             .print-hide {
@@ -667,6 +715,23 @@ $Script = new Script("
                 });
             });
 			}
+			 function showTab(tabName) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.nav-item');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            const tabButtons = document.querySelectorAll('.tab');
+            tabButtons.forEach(button => button.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+			 function goToLiveMonitor(machineId) {
+            showTab('monitor');
+            document.getElementById('machine-select').value = machineId;
+            loadMachineSensors();
+        }
 			function stopLiveMonitoring() {
             if (state.liveMonitoringInterval) {
                 clearInterval(state.liveMonitoringInterval);
@@ -697,7 +762,68 @@ $Script = new Script("
                     renderSettings();
                     break;
             }
-        }".
+        }".'
+		function renderLiveMonitoring() {
+            /*if (!state.selectedMachine) {
+                document.getElementById(\'content\').innerHTML = \'<div>Please select a machine from the dashboard to monitor.</div>\';
+                return;
+            }*/
+
+            const latestReading = [...state.readings].reverse().find(r => r.machine_id === state.selectedMachine.machine_id);
+            const machineValueCategories = state.valueCategories.filter(vc => 
+                latestReading?.values.some(v => v.value_category_id === vc.id)
+            );
+            const connectionStatus = getConnectionStatus(state.selectedMachine);
+
+            const html = `
+                <div class="live-monitor-header">
+                    <h2>${state.selectedMachine.name} (${state.selectedMachine.machine_id})</h2>
+                    <div class="connection-status-badge ${connectionStatus}">
+                        ${connectionStatus}
+                    </div>
+                </div>
+                <div class="monitoring-grid">
+                    ${machineValueCategories.map(vc => {
+                        const sensorValue = latestReading?.values.find(v => v.value_category_id === vc.id);
+                        if (!sensorValue) return \'\';
+
+                        const effectiveThreshold = state.thresholds.find(t => 
+                            t.machine_id === state.selectedMachine.machine_id && t.value_category_id === vc.id
+                        ) || state.thresholds.find(t => t.value_category_id === vc.id && !t.machine_id);
+                        
+                        const isNumeric = typeof sensorValue.value === \'number\';
+                        const healthStatus = isNumeric ? getHealthStatus(sensorValue.value, effectiveThreshold) : \'normal\';
+
+                        let displayValue = sensorValue.value;
+                        if (typeof displayValue === \'boolean\') displayValue = displayValue ? \'ON\' : \'OFF\';
+
+                        let percentage = 0;
+                        if (isNumeric && effectiveThreshold && effectiveThreshold.min_value !== null && effectiveThreshold.max_value !== null) {
+                            percentage = ((sensorValue.value - effectiveThreshold.min_value) / (effectiveThreshold.max_value - effectiveThreshold.min_value)) * 100;
+                            percentage = Math.max(0, Math.min(100, percentage));
+                        }
+
+                        return `
+                            <div class="sensor-card" onclick="showSensorHistory(${vc.id})">
+                                <div class="sensor-label">${vc.value_name}</div>
+                                <div class="sensor-value">${displayValue} ${vc.unit}</div>
+                                ${isNumeric && effectiveThreshold ? `
+                                    <div class="threshold-bar">
+                                        <div class="threshold-fill ${healthStatus}" style="width: ${percentage}%"></div>
+                                    </div>
+                                ` : \'\'}
+                                <button class="btn btn-secondary" style="margin-top: 1rem; width: 100%;" onclick="event.stopPropagation(); diagnoseSensor(\'${vc.value_name}\', \'${sensorValue.value}\', \'${vc.unit}\', ${vc.id})">
+                                    AI Diagnose
+                                </button>
+                            </div>
+                        `;
+                    }).join(\'\')}
+                </div>
+            `;
+
+            document.getElementById(\'content\').innerHTML = html;
+        }
+'.
 		  'function renderDashboard() {
             const groupedMachines = {};
 			const machineCategories = [
@@ -710,6 +836,48 @@ $Script = new Script("
         const Machines = [
             {
                 machine_id: "MFG-001",
+                machine_name: "Production Line A",
+                category_id: 1,
+                category: "Manufacturing Equipment",
+                location: "Factory Floor 1",
+                model: "PL-2000X",
+                manufacturer: "IndustrialTech",
+                serial_number: "IT-PL-2023-001",
+                status: "normal",
+                installed_at: "2023-01-15",
+                last_maintenance: "2024-01-10",
+                next_maintenance: "2024-04-10",
+                sensors: [
+                    { value_category_id: 1, name: "Temperature", current_value: 72, unit: "°F", warning_min: 65, warning_max: 85, critical_min: 60, critical_max: 90 },
+                    { value_category_id: 2, name: "Pressure", current_value: 45, unit: "PSI", warning_min: 35, warning_max: 55, critical_min: 30, critical_max: 60 },
+                    { value_category_id: 4, name: "Vibration", current_value: 0.2, unit: "mm/s", warning_min: 0, warning_max: 0.5, critical_min: 0, critical_max: 1.0 }
+                ],
+                errors: 0,
+                lastUpdated: new Date().toISOString()
+            },
+			{
+                machine_id: "MFG-002",
+                machine_name: "Production Line A",
+                category_id: 1,
+                category: "Manufacturing Equipment",
+                location: "Factory Floor 1",
+                model: "PL-2000X",
+                manufacturer: "IndustrialTech",
+                serial_number: "IT-PL-2023-001",
+                status: "normal",
+                installed_at: "2023-01-15",
+                last_maintenance: "2024-01-10",
+                next_maintenance: "2024-04-10",
+                sensors: [
+                    { value_category_id: 1, name: "Temperature", current_value: 72, unit: "°F", warning_min: 65, warning_max: 85, critical_min: 60, critical_max: 90 },
+                    { value_category_id: 2, name: "Pressure", current_value: 45, unit: "PSI", warning_min: 35, warning_max: 55, critical_min: 30, critical_max: 60 },
+                    { value_category_id: 4, name: "Vibration", current_value: 0.2, unit: "mm/s", warning_min: 0, warning_max: 0.5, critical_min: 0, critical_max: 1.0 }
+                ],
+                errors: 0,
+                lastUpdated: new Date().toISOString()
+            },
+			{
+                machine_id: "MFG-003",
                 machine_name: "Production Line A",
                 category_id: 1,
                 category: "Manufacturing Equipment",
@@ -828,7 +996,14 @@ $Script = new Script("
                                             
                                             <p><strong>Machine ID:</strong> ${machine.machine_id}</p>
 											<p><strong>Category:</strong> ${categoryInfo?.category_name || machine.category}</p>
-											<p><strong>Location:</strong> ${machine.location}</p>
+											<p><strong>Location:</strong> ${machine.location}<button type="button" class="btn btn-secondary" onclick="showLocationModal(\'${machine.machine_id}\')" >
+											<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+                                            <path
+                                                d="M12 2c-4.418 0-8 3.477-8 7.758 0 4.937 5.778 9.866 7.36 11.056a1.5 1.5 0 0 0 1.88 0C17.222 19.624 22 14.695 22 9.758 22 5.477 18.418 2 14 2h-2Z"
+                                                fill="#1E6CF0"/>
+                                               <circle cx="12" cy="9.5" r="3.25" fill="#ffffff" opacity="0.95"/>
+                                               </svg>
+                                               </button></p>
 											<p><strong>Model:</strong> ${machine.model}</p>
 											<p><strong>Manufacturer:</strong> ${machine.manufacturer}</p>
 											<p><strong>Sensors:</strong> ${machine.sensors.length}</p>
@@ -855,15 +1030,158 @@ $Script = new Script("
 		window.sendCommand = function(command, value) {
             /*Send rest request to send command */
         };
-		function showStatusModal(){
-			let status = 'teddddddd';
+		function showStatusModal(machineID){
+		".'	const Machines = [
+            {
+                machine_id: "MFG-001",
+                machine_name: "Production Line A",
+                category_id: 1,
+                category: "Manufacturing Equipment",
+                location: "Factory Floor 1",
+                model: "PL-2000X",
+                manufacturer: "IndustrialTech",
+                serial_number: "IT-PL-2023-001",
+                status: "normal",
+                installed_at: "2023-01-15",
+                last_maintenance: "2024-01-10",
+                next_maintenance: "2024-04-10",
+                sensors: [
+                    { value_category_id: 1, name: "Temperature", current_value: 72, unit: "°F", warning_min: 65, warning_max: 85, critical_min: 60, critical_max: 90 },
+                    { value_category_id: 2, name: "Pressure", current_value: 45, unit: "PSI", warning_min: 35, warning_max: 55, critical_min: 30, critical_max: 60 },
+                    { value_category_id: 4, name: "Vibration", current_value: 0.2, unit: "mm/s", warning_min: 0, warning_max: 0.5, critical_min: 0, critical_max: 1.0 }
+                ],
+                errors: 0,
+                lastUpdated: new Date().toISOString()
+            },
+			{
+                machine_id: "MFG-002",
+                machine_name: "Production Line A",
+                category_id: 1,
+                category: "Manufacturing Equipment",
+                location: "Factory Floor 1",
+                model: "PL-2000X",
+                manufacturer: "IndustrialTech",
+                serial_number: "IT-PL-2023-001",
+                status: "normal",
+                installed_at: "2023-01-15",
+                last_maintenance: "2024-01-10",
+                next_maintenance: "2024-04-10",
+                sensors: [
+                    { value_category_id: 1, name: "Temperature", current_value: 72, unit: "°F", warning_min: 65, warning_max: 85, critical_min: 60, critical_max: 90 },
+                    { value_category_id: 2, name: "Pressure", current_value: 45, unit: "PSI", warning_min: 35, warning_max: 55, critical_min: 30, critical_max: 60 },
+                    { value_category_id: 4, name: "Vibration", current_value: 0.2, unit: "mm/s", warning_min: 0, warning_max: 0.5, critical_min: 0, critical_max: 1.0 }
+                ],
+                errors: 0,
+                lastUpdated: new Date().toISOString()
+            },
+			{
+                machine_id: "MFG-003",
+                machine_name: "Production Line A",
+                category_id: 1,
+                category: "Manufacturing Equipment",
+                location: "Factory Floor 1",
+                model: "PL-2000X",
+                manufacturer: "IndustrialTech",
+                serial_number: "IT-PL-2023-001",
+                status: "normal",
+                installed_at: "2023-01-15",
+                last_maintenance: "2024-01-10",
+                next_maintenance: "2024-04-10",
+                sensors: [
+                    { value_category_id: 1, name: "Temperature", current_value: 72, unit: "°F", warning_min: 65, warning_max: 85, critical_min: 60, critical_max: 90 },
+                    { value_category_id: 2, name: "Pressure", current_value: 45, unit: "PSI", warning_min: 35, warning_max: 55, critical_min: 30, critical_max: 60 },
+                    { value_category_id: 4, name: "Vibration", current_value: 0.2, unit: "mm/s", warning_min: 0, warning_max: 0.5, critical_min: 0, critical_max: 1.0 }
+                ],
+                errors: 0,
+                lastUpdated: new Date().toISOString()
+            },
+            {
+                machine_id: "HVAC-002",
+                machine_name: "HVAC Unit B",
+                category_id: 2,
+                category: "HVAC Systems",
+                location: "Building 2 - Floor 3",
+                model: "AC-5000",
+                manufacturer: "ClimateControl Inc",
+                serial_number: "CC-AC-2023-002",
+                status: "maintenance",
+                installed_at: "2023-03-20",
+                last_maintenance: "2024-01-05",
+                next_maintenance: "2024-03-05",
+                sensors: [
+                    { value_category_id: 1, name: "Temperature", current_value: 68, unit: "°F", warning_min: 65, warning_max: 75, critical_min: 60, critical_max: 80 },
+                    { value_category_id: 3, name: "Humidity", current_value: 45, unit: "%", warning_min: 30, warning_max: 60, critical_min: 20, critical_max: 70 },
+                    { value_category_id: 5, name: "Air Flow", current_value: 850, unit: "CFM", warning_min: 700, warning_max: 1000, critical_min: 600, critical_max: 1200 }
+                ],
+                errors: 2,
+                lastUpdated: new Date().toISOString()
+            },
+            {
+                machine_id: "SEC-003",
+                machine_name: "Security Camera 1",
+                category_id: 3,
+                category: "Security Systems",
+                location: "Main Entrance",
+                model: "SC-HD-Pro",
+                manufacturer: "SecureTech",
+                serial_number: "ST-SC-2023-003",
+                status: "active",
+                installed_at: "2023-02-10",
+                last_maintenance: "2024-01-15",
+                next_maintenance: "2024-07-15",
+                sensors: [
+                    { value_category_id: 7, name: "Motion Detection", current_value: 1, unit: "", warning_min: 0, warning_max: 1, critical_min: 0, critical_max: 1 },
+                    { value_category_id: 6, name: "Light Level", current_value: 49, unit: "lux", warning_min: 100, warning_max: 2000, critical_min: 50, critical_max: 3000 }
+                ],
+                errors: 0,
+                lastUpdated: new Date().toISOString()
+            },
+            {
+                machine_id: "ENR-004",
+                machine_name: "Power Distribution Unit",
+                category_id: 4,
+                category: "Energy Management",
+                location: "Electrical Room A",
+                model: "PDU-Industrial",
+                manufacturer: "PowerSystems Corp",
+                serial_number: "PS-PDU-2023-004",
+                status: "active",
+                installed_at: "2023-01-05",
+                last_maintenance: "2024-01-20",
+                next_maintenance: "2024-04-20",
+                sensors: [
+                    { value_category_id: 8, name: "Power Consumption", current_value: 125.5, unit: "kW", warning_min: 0, warning_max: 150, critical_min: 0, critical_max: 180 },
+                    { value_category_id: 1, name: "Temperature", current_value: 50, unit: "°F", warning_min: 60, warning_max: 80, critical_min: 81, critical_max: 85 }
+                ],
+                errors: 2,
+                lastUpdated: new Date().toISOString()
+            }
+        ];'."
 			
-			/*Machines.forEach(machine => {
-              + ' errors '  ; 
-            });status + =  machine.errors.toString() 
-			*/
-			document.getElementById('status-content').innerHTML = `<pre style=".'"white-space: pre-wrap; font-family: inherit; line-height: 1.4; font-size: 0.95em;"'.">\${status}</pre>`;
-            document.getElementById('status-modal').style.display = 'block';
+			let status = '';
+			let ModalBackColor ;
+			const machine = Machines.find(m => m.machine_id === machineID);
+           if (!machine) return;
+            if (!machine) return;
+            let Sensors = machine.sensors;
+			Sensors.forEach(sensor => {
+				status += sensor.name + ' name:';
+			
+			if (machine.errors == 0 ){
+				ModalBackColor = '#bbec6a';
+			}else if ( machine.errors > 0 ){
+				ModalBackColor = '#fc633a';
+			}
+			if (sensor.current_value >= sensor.warning_min && sensor.current_value <= sensor.warning_max ){
+				ModalBackColor = '#fca61e';  
+		    }
+			});
+			
+	
+			document.getElementById('pop-content').parentElement.style.backgroundColor = ModalBackColor;
+           
+			document.getElementById('pop-content').innerHTML = '<span>ℹ️Machine Status</span>' + `<pre style=".'"white-space: pre-wrap; font-family: inherit; line-height: 1.4; font-size: 0.95em;"'.">\${status}</pre>`;
+            document.getElementById('pop-modal').style.display = 'block';
 		}
 		function AddToggleEvent(){
 		document.getElementById('theme-toggle').addEventListener('change', (e) => {
@@ -880,6 +1198,29 @@ $Script = new Script("
 		function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
         }
+		function showLocationModal(MachineID){
+			// Example GPS coordinates (Johannesburg, South Africa)
+			const vehicleLat = -26.2041;
+			const vehicleLng = 28.0473;
+            
+			// Initialize map when modal is shown
+			const vehicleModal = document.getElementById('pop-content');
+			vehicleModal.outerHTML= '<div class= \"pop-content\" ><div id=\"map\" ></div></div>';
+			document.getElementById('pop-modal').style.display = 'block';
+			vehicleModal.addEventListener('shown.bs.modal', function () {
+			const map = L.map('map').setView([vehicleLat, vehicleLng], 13);
+
+			// Add OpenStreetMap tiles
+			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: '&copy; OpenStreetMap contributors'
+			}).addTo(map);
+
+			// Add marker for vehicle
+			L.marker([vehicleLat, vehicleLng]).addTo(map)
+			.bindPopup(\"\${MachineID} Location\")
+			.openPopup();
+			});
+		}
 		function showMachineDetails(machineId) {
             //const machine = Machines.find(m => m.machine_id === machineId);
            // if (!machine) return;
@@ -930,61 +1271,27 @@ $CategorySection->AddElement($CategoryDiv);
 $ContentDiv->AddElement($CategorySection);*/
 $MainContent->AddElement($ContentDiv);
 $ModalDiv = new Div();
-$ModalDiv->AddAttrib("id","status-modal");
+$ModalDiv->AddAttrib("id","pop-modal");
 $ModalDiv->AddAttrib("style","display: none;");
 $ModalDiv->AddAttrib("class","modal");
 
-$StatusModal = new Div();
-$StatusModal->AddAttrib("class","modal-content");
+$PopModal = new Div();
+$PopModal->AddAttrib("class","pop-content");
 
 $Span = new Span ("x");
 $Span->AddAttrib("class","close");
-$Span->AddAttrib("onclick","closeModal('status-modal')");
-$StatusModal->AddElement($Span);
-$H3 = new H3("Machine Status");
+$Span->AddAttrib("onclick","closeModal('pop-modal')");
+$PopModal->AddElement($Span);
+
 $ContentBody = new Div();
-$ContentBody->AddElement($H3);
-$ContentBody->AddAttrib("id","status-content");
-$StatusModal->AddElement($ContentBody);
-$ModalDiv->AddElement($StatusModal);
+$ContentBody->AddAttrib("id","pop-content");
+$PopModal->AddElement($ContentBody);
+$ModalDiv->AddElement($PopModal);
 
-/*<div class="content" id="content">
-                <section class="category-section">
-                    <div class="category-header">
-                        <div class="category-icon" style="background-color: #f59e0b20">
-                            <svg viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 3.5c-1.2 0-2.3.4-3.2 1.1L12 8l3.2-3.4c-.9-.7-2-1.1-3.2-1.1z M12 20.5c1.2 0 2.3-.4 3.2-1.1L12 16l-3.2 3.4c.9.7 2 1.1 3.2 1.1z M5.1 6.3C4.4 7.2 4 8.3 4 9.5s.4 2.3 1.1 3.2l3.4-3.2L5.1 6.3zm13.8 0l-3.4 3.2 3.4 3.2c.7-.9 1.1-2 1.1-3.2s-.4-2.3-1.1-3.2z M12 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"></path></svg>
-                        </div>
-                        <h3>Solar Water Heaters (1)</h3>
-                    </div>
-                    <div class="machine-grid">
-                        
-                                <div class="machine-card">
-                                    <div class="machine-card-header">
-                                        <h4>Main Heater Unit</h4>
-                                        <div class="connection-status-dot online" title="online"></div>
-                                    </div>
-                                    <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin-bottom: 1rem">SWH001</p>
-                                    <div style="display: flex; align-items: center; gap: 1rem;">
-                                        <div class="status-badge normal">normal</div>
-                                        <div class="machine-icon-container">
-                                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12 3.5c-1.2 0-2.3.4-3.2 1.1L12 8l3.2-3.4c-.9-.7-2-1.1-3.2-1.1z M12 20.5c1.2 0 2.3-.4 3.2-1.1L12 16l-3.2 3.4c.9.7 2 1.1 3.2 1.1z M5.1 6.3C4.4 7.2 4 8.3 4 9.5s.4 2.3 1.1 3.2l3.4-3.2L5.1 6.3zm13.8 0l-3.4 3.2 3.4 3.2c.7-.9 1.1-2 1.1-3.2s-.4-2.3-1.1-3.2z M12 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"></path>
-                                            </svg>
-                                            <span>Solar Water Heaters</span>
-                                        </div>
-                                    </div>
-                                    <div class="card-actions">
-                                        <button class="btn btn-primary" onclick="monitorMachine('SWH001')">Monitor Details</button>
-                                    </div>
-                                </div>
-                            
-                    </div>
-                </section>
-            </div> */
-	$Div->AddElement($ModalDiv);		
 $Div->AddElement($MainContent);
-
 $HtmlBody->AddElement($Div);
+$HtmlBody->AddElement($ModalDiv);
+
 $HtmlDoc->AddElement($HtmlBody);
 $HtmlDoc->render();
 
